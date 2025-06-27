@@ -1,0 +1,8 @@
+#Secrets file
+secrets.json
+
+#Python
+__pycache__
+
+#Generated logs
+chat_logs/
