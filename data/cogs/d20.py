@@ -10,6 +10,7 @@ from secrets import SystemRandom
 # Cooldown variable; change only for testing purposes
 cooldown_sec = 3600
 
+
 class D20(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
