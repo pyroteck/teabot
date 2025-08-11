@@ -49,6 +49,7 @@ class ModerationEvents(commands.Cog):
             color=discord.Color.green(),
             timestamp=join_time
         )
+        embed.add_field(name="Username", value=member.name, inline=False)
         embed.add_field(name="User ID", value=member.id, inline=False)
 
         logs_channel_id = int(self.config["LOGS_CHANNEL_ID"])
