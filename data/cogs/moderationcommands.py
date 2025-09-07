@@ -57,7 +57,7 @@ class ModerationCommands(commands.Cog):
 
         await ctx.send(f"Deleted {deleted_count} messages after {after_time}.")
 
-    @commands.command(hidden=True)
+    @commands.hybrid_command(hidden=True)
     @commands.has_permissions(administrator=True)
     async def logeverymessage(self, ctx):
         """Logs the entire message history for every channel in the guild."""
@@ -90,7 +90,10 @@ class ModerationCommands(commands.Cog):
 
             self.save_message_log(channel_id, message_log)
 
-        await ctx.send(f"Logged {total_messages_logged} messages across all channels.")
+        if isinstance(ctx.interaction, discord.Interaction):
+            await ctx.reply(f"Logged {total_messages_logged} messages across all channels.", ephemeral=True)
+        else:
+            await ctx.reply(f"Logged {total_messages_logged} messages across all channels.")
         
     @commands.hybrid_command(hidden=True)
     @commands.has_permissions(administrator=True)
