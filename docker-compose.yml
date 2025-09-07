@@ -1,6 +1,6 @@
 services:
   teabot:
-    image: teabot_image:1.1
+    build: .
     container_name: teabot
     volumes:
       - ./data:/data
@@ -9,5 +9,5 @@ services:
       resources:
         limits:
           cpus: '1'
-          memory: 3G
+          memory: 1G
     restart: unless-stopped

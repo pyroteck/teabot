@@ -4,24 +4,9 @@ A Discord bot written in Python ([discord.py](https://discordpy.readthedocs.io/e
 
 Created for use in [thechachachai's](https://www.twitch.tv/thechachachai) Discord channel, but designed with the intention to be used by anyone. 
 
-## Setup
+&nbsp;
 
-Install [python 3.13.x](https://www.python.org/downloads/)
-
-Install necessary pip packages
-
-```
-pip install discord.py
-```
-```
-pip install aiohttp
-```
-```
-pip install texttable
-```
-```
-pip install pytz
-```
+## Initial Setup
 
 Clone the repository to a directory of your choice
 
@@ -55,13 +40,42 @@ For a full list of valid timezones, refer to [this list](https://gist.github.com
 
 &nbsp;
 
-Once all the above is set up correctly, start the bot by running the `bot.py` file
+## Running with Docker
+
+Navigate to root directory of the repository.
+
+Run
+```
+sudo docker compose up -d
+```
+to build and run the Docker container.
+
+&nbsp;
+
+## Running Locally
+
+Install [python 3.13.x](https://www.python.org/downloads/)
+
+Install necessary pip packages
+
+```
+pip install discord.py
+```
+```
+pip install aiohttp
+```
+```
+pip install texttable
+```
+```
+pip install pytz
+```
+
+Once all the packages are installed, navigate to `./data` and run the `bot.py` file
 
 ```
 python bot.py
 ```
-
-&nbsp; 
 
 &nbsp;
 
