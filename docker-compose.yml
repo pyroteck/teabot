@@ -1,6 +1,6 @@
 services:
   teabot:
-    image: teabot_image:1.0
+    image: teabot_image:1.1
     container_name: teabot
     volumes:
       - ./data:/data
