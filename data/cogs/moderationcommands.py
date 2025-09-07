@@ -61,6 +61,9 @@ class ModerationCommands(commands.Cog):
     @commands.has_permissions(administrator=True)
     async def logeverymessage(self, ctx):
         """Logs the entire message history for every channel in the guild."""
+        if isinstance(ctx.interaction, discord.Interaction):
+            await ctx.defer(ephemeral=True)
+
         guild = ctx.guild
         total_messages_logged = 0
 
