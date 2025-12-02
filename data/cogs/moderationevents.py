@@ -14,6 +14,7 @@ class ModerationEvents(commands.Cog):
         if not os.path.exists(self.chat_logs_dir):
             os.makedirs(self.chat_logs_dir)
         self.timezone = pytz.timezone(self.config["TIMEZONE"])
+        self.ignored_message_ids = set(self.config.get("IGNORED_MESSAGE_IDS", []))
 
     def get_message_log_file(self, channel_id):
         return os.path.join(self.chat_logs_dir, f"message_log_{channel_id}.json")
@@ -110,6 +111,11 @@ class ModerationEvents(commands.Cog):
         message_id = str(payload.message_id)
         channel_id = str(payload.channel_id)
         message_log = self.load_message_log(channel_id)
+        
+        # Check list in secrets if there's a message ID to ignore
+        if str(payload.message_id) in self.ignored_message_ids:
+            print(f"Message with ID {message_id} was edited but is marked to be ignored.")
+            return
 
         if message_id not in message_log:
             print(f"Message with ID {message_id} not found in the log for channel {channel_id}.")

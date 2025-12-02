@@ -21,7 +21,8 @@ Create a file in the source directory named `secrets.json` with the following:
     "GOING_LIVE_CHANNEL_ID": "",
     "NEW_USER_JOIN_ROLE_ID": "",
     "LOGS_CHANNEL_ID": "",
-    "TIMEZONE": ""
+    "TIMEZONE": "",
+    "IGNORED_MESSAGE_IDS": []
 }
 ```
 Add the following data in the quotes:
@@ -34,6 +35,7 @@ GOING_LIVE_CHANNEL_ID:  Channel ID to send a message to @everyone when the bot d
 NEW_USER_JOIN_ROLE_ID:  Role ID to automatically assign to new users
 LOGS_CHANNEL_ID:        Channel ID for the bot to send moderation logs to.
 TIMEZONE:               Timezone for your bot to refer to
+IGNORED_MESSAGE_IDS:    List of message IDs that you want the bot to ignore edits of.
 ```
 
 For a full list of valid timezones, refer to [this list](https://gist.github.com/heyalexej/8bf688fd67d7199be4a1682b3eec7568).
