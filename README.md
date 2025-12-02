@@ -22,7 +22,8 @@ Create a file in the source directory named `secrets.json` with the following:
     "NEW_USER_JOIN_ROLE_ID": "",
     "LOGS_CHANNEL_ID": "",
     "TIMEZONE": "",
-    "IGNORED_MESSAGE_IDS": []
+    "IGNORED_MESSAGE_IDS": [],
+    "ALTERNATE_LOG_CHANNEL": []
 }
 ```
 Add the following data in the quotes:
