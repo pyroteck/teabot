@@ -10,11 +10,23 @@ class ModerationEvents(commands.Cog):
         self.bot = bot
         with open('secrets.json') as config_file:
             self.config = json.load(config_file)
+
         self.chat_logs_dir = "chat_logs"
         if not os.path.exists(self.chat_logs_dir):
             os.makedirs(self.chat_logs_dir)
+
         self.timezone = pytz.timezone(self.config["TIMEZONE"])
+
         self.ignored_message_ids = set(self.config.get("IGNORED_MESSAGE_IDS", []))
+
+        self.alternate_log_channels = {}
+        alternate_log_config = self.config.get("ALTERNATE_LOG_CHANNEL", [])
+        for mapping in alternate_log_config:
+            if ':' in mapping:
+                channel_id, message_ids_str = mapping.split(':', 1)
+                channel_id = channel_id.strip()
+                message_ids = [msg_id.strip() for msg_id in message_ids_str.split(',')]
+                self.alternate_log_channels[channel_id] = set(message_ids)
 
     def get_message_log_file(self, channel_id):
         return os.path.join(self.chat_logs_dir, f"message_log_{channel_id}.json")
@@ -146,6 +158,13 @@ class ModerationEvents(commands.Cog):
         if message_data["content"] == message.content:
             return  # Ignore if the content hasn't changed
 
+        # Check if this message should go to an alternate channel
+        alternate_channel_id = None
+        for channel_id_key, message_ids in self.alternate_log_channels.items():
+            if message_id in message_ids:
+                alternate_channel_id = channel_id_key
+                break
+
         # Convert the message's edited_at timestamp to the specified timezone
         edited_at_pacific = message.edited_at.astimezone(self.timezone)
 
@@ -160,13 +179,23 @@ class ModerationEvents(commands.Cog):
         embed.add_field(name="Edited Content", value=message.content, inline=False)
         embed.add_field(name="Message Link", value=message.jump_url, inline=False)
 
-        logs_channel_id = int(self.config["LOGS_CHANNEL_ID"])
-        logs_channel = self.bot.get_channel(logs_channel_id)  # Get the logs channel
-        if not logs_channel:
-            print(f"Logs channel with ID {logs_channel_id} not found.")
-            return
+        if alternate_channel_id:
+            logs_channel = self.bot.get_channel(int(alternate_channel_id))
+            if logs_channel:
+                await logs_channel.send(embed=embed)
+            else:
+                # Fallback to default channel if alternate channel is not found
+                default_logs_channel_id = int(self.config["LOGS_CHANNEL_ID"])
+                default_logs_channel = self.bot.get_channel(default_logs_channel_id)
+                if default_logs_channel:
+                    await default_logs_channel.send(embed=embed)
+        else:
+            # Send to default channel
+            logs_channel_id = int(self.config["LOGS_CHANNEL_ID"])
+            logs_channel = self.bot.get_channel(logs_channel_id)
+            if logs_channel:
+                await logs_channel.send(embed=embed)
 
-        await logs_channel.send(embed=embed)
 
         # Update the message log
         message_data["content"] = message.content

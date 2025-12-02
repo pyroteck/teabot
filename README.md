@@ -36,6 +36,7 @@ NEW_USER_JOIN_ROLE_ID:  Role ID to automatically assign to new users
 LOGS_CHANNEL_ID:        Channel ID for the bot to send moderation logs to.
 TIMEZONE:               Timezone for your bot to refer to
 IGNORED_MESSAGE_IDS:    List of message IDs that you want the bot to ignore edits of.
+ALTERNATE_LOG_CHANNEL:  "Key, value" list of specific message IDs you'd like to send to an alternate channel ID. ["channel_id: message_id, message_id", ...]
 ```
 
 For a full list of valid timezones, refer to [this list](https://gist.github.com/heyalexej/8bf688fd67d7199be4a1682b3eec7568).
