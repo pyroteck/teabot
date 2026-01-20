@@ -11,7 +11,7 @@ with open('secrets.json') as config_file:
 bot = commands.Bot(command_prefix='$', intents=intents)
 
 async def load_extensions():
-    for filename in ['d20', 'general', 'moderationcommands', 'moderationevents', 'stream', 'queue']:
+    for filename in ['d20', 'general', 'moderationcommands', 'moderationevents', 'stream', 'queue', 'queuemaster']:
         await bot.load_extension(f"cogs.{filename}")
 
 @bot.event

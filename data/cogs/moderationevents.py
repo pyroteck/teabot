@@ -120,6 +120,9 @@ class ModerationEvents(commands.Cog):
 
     @commands.Cog.listener()
     async def on_raw_message_edit(self, payload: discord.RawMessageUpdateEvent):
+        if payload.cached_message and payload.cached_message.author.bot:
+            return  # Ignore messages from bots
+        
         message_id = str(payload.message_id)
         channel_id = str(payload.channel_id)
         message_log = self.load_message_log(channel_id)
@@ -204,6 +207,9 @@ class ModerationEvents(commands.Cog):
 
     @commands.Cog.listener()
     async def on_raw_message_delete(self, payload: discord.RawMessageDeleteEvent):
+        if payload.cached_message and payload.cached_message.author.bot:
+            return  # Ignore messages from bots
+        
         message_id = str(payload.message_id)
         channel_id = str(payload.channel_id)
         message_log = self.load_message_log(channel_id)

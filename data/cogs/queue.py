@@ -3,6 +3,7 @@ from discord.ext import commands
 import sqlite3
 import os
 import json
+import asyncio
 
 class QueueSystem(commands.Cog):
     def __init__(self, bot):
@@ -91,6 +92,24 @@ class QueueSystem(commands.Cog):
             await message.edit(embed=embed)
         except Exception as e:
             print(f"Error updating queue message: {e}")
+            
+    async def periodic_queue_update(self, channel_id):
+        """Periodically update the queue message with current count"""
+        while True:
+            try:
+                await asyncio.sleep(5)  # Wait 5 seconds
+
+                # Get the stored message ID
+                message_id = self.load_message_id()
+                if message_id:
+                    await self.update_queue_message(channel_id, message_id)
+
+            except asyncio.CancelledError:
+                break
+            except Exception as e:
+                print(f"Error in periodic update: {e}")
+                continue
+
 
     async def setup_queue_message(self):
         """Set up the queue message on bot startup"""
@@ -118,6 +137,10 @@ class QueueSystem(commands.Cog):
 
         # Create new queue message
         await self.create_new_queue_message(channel, channel_id)
+
+        # Start periodic updates (add this line)
+        self.bot.loop.create_task(self.periodic_queue_update(channel_id))
+
 
     async def delete_existing_queue_message(self, channel):
         """Delete any existing queue message in the channel"""
@@ -366,7 +389,7 @@ class QueueView(discord.ui.View):  # Changed to inherit from View
                 interaction,
                 f"You are currently {place_text} place in line out of {total_count} players in the queue.",
                 ephemeral=True,
-                delete_after_secs=5.0
+                delete_after_secs=10.0
             )
 
 class ConfirmView(discord.ui.View):
