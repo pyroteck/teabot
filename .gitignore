@@ -6,3 +6,6 @@ __pycache__
 
 #Generated logs
 chat_logs/
+
+#Queue files
+queue_files/

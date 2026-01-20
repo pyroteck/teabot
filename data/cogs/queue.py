@@ -8,8 +8,13 @@ import asyncio
 class QueueSystem(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.db_path = "queue_system.db"
-        self.message_id_file = "queue_message_id.txt"
+        self.data_dir = "queue_files"
+        self.db_path = os.path.join(self.data_dir, "queue_system.db")
+        self.message_id_file = os.path.join(self.data_dir, "queue_message_id.txt")
+
+        # Ensure data directory exists
+        os.makedirs(self.data_dir, exist_ok=True)
+
         self.init_database()
         self.load_secrets()
         self.bot.loop.create_task(self.setup_queue_message())
@@ -92,7 +97,7 @@ class QueueSystem(commands.Cog):
             await message.edit(embed=embed)
         except Exception as e:
             print(f"Error updating queue message: {e}")
-            
+
     async def periodic_queue_update(self, channel_id):
         """Periodically update the queue message with current count"""
         while True:
@@ -109,7 +114,6 @@ class QueueSystem(commands.Cog):
             except Exception as e:
                 print(f"Error in periodic update: {e}")
                 continue
-
 
     async def setup_queue_message(self):
         """Set up the queue message on bot startup"""
@@ -138,7 +142,7 @@ class QueueSystem(commands.Cog):
         # Create new queue message
         await self.create_new_queue_message(channel, channel_id)
 
-        # Start periodic updates (add this line)
+        # Start periodic updates
         self.bot.loop.create_task(self.periodic_queue_update(channel_id))
 
 
@@ -229,7 +233,7 @@ class QueueSystem(commands.Cog):
         await self.create_new_queue_message(channel, channel_id)
         await ctx.send(f"Queue created in <#{channel_id}>")
 
-class QueueView(discord.ui.View):  # Changed to inherit from View
+class QueueView(discord.ui.View):
     def __init__(self, cog, channel_id):
         super().__init__(timeout=None)
         self.cog = cog

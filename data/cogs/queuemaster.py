@@ -3,15 +3,22 @@ from discord.ext import commands
 import sqlite3
 import os
 import json
+import asyncio
 
-class QueuePuller(commands.Cog):
+class QueueMaster(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.db_path = "queue_system.db"
-        self.message_id_file = "queue_puller_message_id.txt"
+
+        self.queue_dir = "queue_files"
+        if not os.path.exists(self.queue_dir):
+            os.makedirs(self.queue_dir)
+
+        self.db_path = os.path.join(self.queue_dir, "queue_system.db")
+        self.message_id_file = os.path.join(self.queue_dir, "queue_puller_message_id.txt")
         self.init_database()
         self.load_secrets()
         self.bot.loop.create_task(self.setup_puller_message())
+        self.bot.loop.create_task(self.refresh_queue_loop())
 
     def load_secrets(self):
         """Load secrets from JSON file"""
@@ -68,6 +75,21 @@ class QueuePuller(commands.Cog):
         conn.close()
         return None, None
 
+    async def pull_top_subscriber(self):
+        """Pull the user at the top of the subscriber queue"""
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+        cursor.execute("SELECT user_id, username FROM queue_users WHERE is_subscriber=1 ORDER BY joined_at ASC LIMIT 1")
+        user = cursor.fetchone()
+        if user:
+            user_id, username = user
+            cursor.execute("DELETE FROM queue_users WHERE user_id=?", (user_id,))
+            conn.commit()
+            conn.close()
+            return user_id, username
+        conn.close()
+        return None, None
+
     async def remove_user_from_queue(self, user_id):
         """Remove a specific user from the queue"""
         conn = sqlite3.connect(self.db_path)
@@ -88,18 +110,35 @@ class QueuePuller(commands.Cog):
 
             # Create or update embed with queue list
             embed = message.embeds[0] if message.embeds else discord.Embed()
-            embed.title = "Queue Puller"
+            embed.title = "Queue Master"
             embed.description = "Select an action below to pull users from queue"
 
-            # Clear existing queue field if exists
+            # Clear existing queue fields if they exist
             embed.clear_fields()
 
-            # Add updated queue list
-            if users:
-                queue_list = "\n".join([f"{i+1}. {user[1]}" for i, user in enumerate(users)])
-                embed.add_field(name="Current Queue", value=queue_list, inline=False)
+            # Split users into regular and subscriber queues
+            all_users = []
+            subscriber_users = []
+
+            for user in users:
+                user_id, username, is_subscriber = user
+                if is_subscriber:
+                    subscriber_users.append(f"{username}")
+                all_users.append(f"{username}")
+
+            # Add regular queue field
+            if all_users:
+                regular_queue = "\n".join([f"{i+1}. {user}" for i, user in enumerate(all_users)])
+                embed.add_field(name="Regular Queue", value=regular_queue, inline=True)
             else:
-                embed.add_field(name="Current Queue", value="No users in queue", inline=False)
+                embed.add_field(name="Regular Queue", value="No regular users in queue", inline=True)
+
+            # Add subscriber queue field
+            if subscriber_users:
+                subscriber_queue = "\n".join([f"{i+1}. {user}" for i, user in enumerate(subscriber_users)])
+                embed.add_field(name="Subscriber Queue", value=subscriber_queue, inline=True)
+            else:
+                embed.add_field(name="Subscriber Queue", value="No subscribers in queue", inline=True)
 
             await message.edit(embed=embed)
         except Exception as e:
@@ -177,16 +216,17 @@ class QueuePuller(commands.Cog):
         """Create a new puller message and save its ID"""
         # Create embed message
         embed = discord.Embed(
-            title="Queue Puller",
+            title="Queue Master",
             description="Select an action below to pull users from queue",
             color=discord.Color.blue()
         )
 
-        # Add empty queue list field
-        embed.add_field(name="Current Queue", value="No users in queue", inline=False)
+        # Add empty queue fields
+        embed.add_field(name="User Queue", value="No users in queue", inline=True)
+        embed.add_field(name="Subscriber Queue", value="No subscribers in queue", inline=True)
 
         # Create view with buttons
-        view = PullerView(self, channel_id)
+        view = MasterView(self, channel_id)
         message = await channel.send(embed=embed, view=view)
 
         # Store the message ID for later updates
@@ -194,10 +234,38 @@ class QueuePuller(commands.Cog):
         self.save_message_id(message.id)
         print(f"New puller message created with ID {message.id}")
 
-        # Update the message to show current queue
-        await self.update_puller_message(channel_id, message.id)
+    async def refresh_queue_loop(self):
+        """Refresh queue every 5 seconds"""
+        await self.bot.wait_until_ready()
+        while True:
+            try:
+                # Get channel ID from secrets
+                channel_id = self.secrets.get("QUEUE_MASTER_CHANNEL_ID")
+                if not channel_id:
+                    await asyncio.sleep(5)
+                    continue
 
-class PullerView(discord.ui.View):
+                try:
+                    channel_id = int(channel_id)
+                except ValueError:
+                    await asyncio.sleep(5)
+                    continue
+
+                # Load message ID
+                message_id = self.load_message_id()
+                if message_id:
+                    await self.update_puller_message(channel_id, message_id)
+                else:
+                    # If no message ID, try to recreate
+                    channel = self.bot.get_channel(channel_id)
+                    if channel:
+                        await self.delete_existing_puller_message(channel)
+                        await self.create_new_puller_message(channel, channel_id)
+            except Exception as e:
+                print(f"Error in refresh loop: {e}")
+            await asyncio.sleep(5)
+
+class MasterView(discord.ui.View):
     def __init__(self, cog, channel_id):
         super().__init__(timeout=None)
         self.cog = cog
@@ -209,7 +277,7 @@ class PullerView(discord.ui.View):
         """Pull the top user from queue"""
         user_id, username = await self.cog.pull_top_user()
 
-        if user_id:
+        if user_id:  # Fixed: was checking for user_id is not None
             # Send direct message to user
             try:
                 dm_channel = await interaction.user.create_dm()
@@ -231,7 +299,34 @@ class PullerView(discord.ui.View):
                 ephemeral=True
             )
 
-    @discord.ui.button(label="Pick from Queue", style=discord.ButtonStyle.primary)
+    @discord.ui.button(label="Pull Top of Subscriber Queue", style=discord.ButtonStyle.primary)
+    async def pull_top_subscriber_button(self, interaction, button):
+        """Pull the top subscriber from queue"""
+        user_id, username = await self.cog.pull_top_subscriber()
+
+        if user_id:
+            # Send direct message to user
+            try:
+                dm_channel = await interaction.user.create_dm()
+                await dm_channel.send(f"You've been pulled from the queue! It's your turn to play!")
+            except:
+                pass  # Ignore if can't send DM
+
+            # Update message
+            await interaction.response.send_message(
+                f"Pulled {username} from the subscriber queue!",
+                ephemeral=True
+            )
+
+            # Update puller message
+            await self.cog.update_puller_message(self.channel_id, self.message_id)
+        else:
+            await interaction.response.send_message(
+                "No subscribers in queue to pull!",
+                ephemeral=True
+            )
+
+    @discord.ui.button(label="Pick from Queue", style=discord.ButtonStyle.secondary)
     async def pick_from_queue_button(self, interaction, button):
         """Open dropdown to pick user from queue"""
         users = await self.cog.get_queue_users()
@@ -251,11 +346,7 @@ class PullerView(discord.ui.View):
             color=discord.Color.blue()
         )
 
-        await interaction.response.send_message(
-            embed=dropdown_embed,
-            view=dropdown_view,
-            ephemeral=True
-        )
+        await interaction.response.send_message(embed=dropdown_embed, view=dropdown_view, ephemeral=True)
 
 class UserSelectView(discord.ui.View):
     def __init__(self, cog, users, channel_id, message_id):
@@ -285,34 +376,75 @@ class UserSelectView(discord.ui.View):
         self.add_item(self.dropdown)
 
     async def dropdown_callback(self, interaction):
-        """Handle dropdown selection"""
         user_id = int(self.dropdown.values[0])
-        username = next((user[1] for user in self.users if user[0] == user_id), None)
+        user_name = next((user[1] for user in self.users if user[0] == user_id), "Unknown User")
 
-        if username:
-            # Remove user from queue
-            await self.cog.remove_user_from_queue(user_id)
+        # Remove user from queue
+        await self.cog.remove_user_from_queue(user_id)
 
-            # Send direct message to user
-            try:
-                dm_channel = await interaction.user.create_dm()
-                await dm_channel.send(f"You've been pulled from the queue! You're now in the game.")
-            except:
-                pass  # Ignore if can't send DM
+        # Send confirmation message
+        await interaction.response.send_message(
+            f"Pulled {user_name} from the queue!",
+            ephemeral=True
+        )
 
-            # Update message
-            await interaction.response.send_message(
-                f"Pulled {username} from the queue!",
-                ephemeral=True
-            )
+        # Update puller message
+        await self.cog.update_puller_message(self.channel_id, self.message_id)
+        self.stop()
 
-            # Update puller message
-            await self.cog.update_puller_message(self.channel_id, self.message_id)
-        else:
-            await interaction.response.send_message(
-                "User not found!",
-                ephemeral=True
-            )
+class UserSelectView(discord.ui.View):
+    def __init__(self, cog, users, channel_id, message_id):
+        super().__init__(timeout=30)
+        self.cog = cog
+        self.users = users
+        self.channel_id = channel_id
+        self.message_id = message_id
+
+        # Create dropdown options
+        options = []
+        for user_id, username, is_subscriber in users:
+            options.append(discord.SelectOption(
+                label=username,
+                value=str(user_id),
+                description=f"Pull {username}" if is_subscriber else f"Pull {username}"
+            ))
+
+        # Create dropdown
+        self.dropdown = discord.ui.Select(
+            placeholder="Choose a user...",
+            options=options,
+            min_values=1,
+            max_values=1
+        )
+        self.dropdown.callback = self.dropdown_callback
+        self.add_item(self.dropdown)
+
+    async def dropdown_callback(self, interaction):
+        user_id = int(self.dropdown.values[0])
+        user_name = next((user[1] for user in self.users if user[0] == user_id), "Unknown User")
+
+        # Remove user from queue
+        await self.cog.remove_user_from_queue(user_id)
+
+        # Send confirmation message
+        await interaction.response.send_message(
+            f"Pulled {user_name} from the queue!",
+            ephemeral=True
+        )
+
+        # Update puller message
+        await self.cog.update_puller_message(self.channel_id, self.message_id)
+        self.stop()
+
+# Add this method to the QueueMaster class
+async def remove_user_from_queue(self, user_id):
+    """Remove a specific user from the queue"""
+    await self.remove_user_from_queue(user_id)
+
+# Add this method to the QueueMaster class
+async def update_puller_message(self, channel_id, message_id):
+    """Update the puller message with current queue"""
+    await self.update_puller_message(channel_id, message_id)
 
 # Event listener for queue updates
 @commands.Cog.listener()
@@ -321,4 +453,4 @@ async def on_queue_update(self):
     pass
 
 async def setup(bot):
-    await bot.add_cog(QueuePuller(bot))
+    await bot.add_cog(QueueMaster(bot))
