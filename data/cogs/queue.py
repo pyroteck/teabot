@@ -344,21 +344,12 @@ class QueueView(discord.ui.View):
         # Update queue message
         await self.cog.update_queue_message(self.channel_id, self.message_id)
 
-        # Send success message
-        if is_subscriber:
-            await self.send_user_response(
-                interaction,
-                "You've been added to the queue as a Twitch subscriber!",
-                ephemeral=True,
-                delete_after_secs=10.0
-            )
-        else:
-            await self.send_user_response(
-                interaction,
-                "You've been added to the queue!",
-                ephemeral=True,
-                delete_after_secs=10.0
-            )
+        await self.send_user_response(
+            interaction,
+            "You've been added to the queue!",
+            ephemeral=True,
+            delete_after_secs=10.0
+        )
 
     @discord.ui.button(label="Leave Queue", style=discord.ButtonStyle.danger)
     async def leave_button(self, interaction, button):
