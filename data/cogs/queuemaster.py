@@ -131,7 +131,7 @@ class QueueMaster(commands.Cog):
             # Create or update embed with queue list
             embed = message.embeds[0] if message.embeds else discord.Embed()
             embed.title = "Queue Master"
-            embed.description = "Select an action below to pull users from queue"
+            embed.description = "Select an action below"
 
             # Clear existing queue fields if they exist
             embed.clear_fields()
@@ -311,16 +311,17 @@ class MasterView(discord.ui.View):
         if user_id:
             # Send direct message to user
             try:
-                dm_channel = await interaction.user.create_dm()
-                await dm_channel.send(f"You've been pulled from the queue! It's your turn to play!")
+                user = await self.cog.bot.fetch_user(user_id)
+                dm_channel = await user.create_dm()
+                await dm_channel.send(f"It's your turn to play! Please check in with Chai!")
             except:
-                pass  # Ignore errors if DM fails
+                print(f"Failed to send DM to user '{username}'")
 
             await interaction.response.send_message(
-                f"Pulled `{username}` from the queue!",
+                f"Picked `{username}` from the queue!",
                 ephemeral=True
             )
-            
+
             await self.cog.update_puller_message(self.channel_id, self.message_id)
         else:
             await interaction.response.send_message("No users in queue.", ephemeral=True)
@@ -332,19 +333,42 @@ class MasterView(discord.ui.View):
         user_id, username = await self.cog.pull_top_subscriber()
         if user_id:
             try:
-                dm_channel = await interaction.user.create_dm()
-                await dm_channel.send(f"You've been pulled from the queue! It's your turn to play!")
+                user = await self.cog.bot.fetch_user(user_id)
+                dm_channel = await user.create_dm()
+                await dm_channel.send(f"It's your turn to play! Please check in with Chai!")
             except:
                 pass  # Ignore errors if DM fails
-            
+
             await interaction.response.send_message(
-                f"Pulled subscriber `{username}` from the queue!", 
+                f"Picked subscriber `{username}` from the queue!",
                 ephemeral=True
             )
-            
+
             await self.cog.update_puller_message(self.channel_id, self.message_id)
         else:
             await interaction.response.send_message("No subscribers in queue.", ephemeral=True)
+
+    @discord.ui.button(label="Pick from Queue", style=discord.ButtonStyle.secondary)
+    async def pick_from_queue_button(self, interaction, button):
+        """Open dropdown to pick user from queue"""
+        users = await self.cog.get_queue_users()
+
+        if not users:
+            await interaction.response.send_message(
+                "No users in queue to pick from!",
+                ephemeral=True
+            )
+            return
+
+        # Create dropdown view
+        dropdown_view = UserSelectView(self.cog, users, self.channel_id, self.message_id)
+        dropdown_embed = discord.Embed(
+            title="Select User to Pull",
+            description="Choose a user from the queue to pull",
+            color=discord.Color.blue()
+        )
+
+        await interaction.response.send_message(embed=dropdown_embed, view=dropdown_view, ephemeral=True)
 
     @discord.ui.button(label="Disable Queue", style=discord.ButtonStyle.danger)
     async def toggle_queue_button(self, interaction, button):
@@ -368,27 +392,59 @@ class MasterView(discord.ui.View):
         await interaction.response.edit_message(view=new_view)
         await interaction.followup.send(f"Queue has been {'disabled' if is_disabled else 'enabled'}", ephemeral=True)
 
-    @discord.ui.button(label="Pick from Queue", style=discord.ButtonStyle.secondary)
-    async def pick_from_queue_button(self, interaction, button):
-        """Open dropdown to pick user from queue"""
-        users = await self.cog.get_queue_users()
-
-        if not users:
-            await interaction.response.send_message(
-                "No users in queue to pick from!",
-                ephemeral=True
-            )
-            return
-
-        # Create dropdown view
-        dropdown_view = UserSelectView(self.cog, users, self.channel_id, self.message_id)
-        dropdown_embed = discord.Embed(
-            title="Select User to Pull",
-            description="Choose a user from the queue to pull",
-            color=discord.Color.blue()
+    @discord.ui.button(label="Clear Queue", style=discord.ButtonStyle.danger)
+    async def clear_queue_button(self, interaction, button):
+        """Clear the entire queue with confirmation"""
+        # Create confirmation view
+        confirm_view = ConfirmClearView(self.cog, self.channel_id, self.message_id)
+        confirm_embed = discord.Embed(
+            title="Confirm Queue Clear",
+            description="Are you sure you want to clear the entire queue? This action cannot be undone.",
+            color=discord.Color.red()
         )
 
-        await interaction.response.send_message(embed=dropdown_embed, view=dropdown_view, ephemeral=True)
+        await interaction.response.send_message(
+            embed=confirm_embed,
+            view=confirm_view,
+            ephemeral=True
+        )
+
+class ConfirmClearView(discord.ui.View):
+    def __init__(self, cog, channel_id, message_id):
+        super().__init__(timeout=30)
+        self.cog = cog
+        self.channel_id = channel_id
+        self.message_id = message_id
+
+    @discord.ui.button(label="Yes", style=discord.ButtonStyle.danger)
+    async def confirm_clear_button(self, interaction, button):
+        """Confirm and clear the queue"""
+        # Clear the database
+        conn = sqlite3.connect(self.cog.db_path)
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM queue_users")
+        conn.commit()
+        conn.close()
+
+        # Update the puller message
+        await self.cog.update_puller_message(self.channel_id, self.message_id)
+
+        # Edit the original message instead of sending a new one
+        await interaction.response.edit_message(
+            content="Queue has been cleared successfully!",
+            embed=None,
+            view=None  # Remove the buttons after action is completed
+        )
+
+    @discord.ui.button(label="No", style=discord.ButtonStyle.success)
+    async def cancel_clear_button(self, interaction, button):
+        """Cancel the clear operation"""
+        # Edit the original message instead of sending a new one
+        await interaction.response.edit_message(
+            content="Queue clear operation cancelled.",
+            embed=None,
+            view=None  # Remove the buttons after action is completed
+        )
 
 class UserSelectView(discord.ui.View):
     def __init__(self, cog, users, channel_id, message_id):
@@ -428,23 +484,26 @@ class UserSelectView(discord.ui.View):
 
             # Send direct message to user
             try:
-                dm_channel = await interaction.user.create_dm()
-                await dm_channel.send(f"You've been pulled from the queue! You're now in the game.")
+                user = await self.cog.bot.fetch_user(user_id)
+                dm_channel = await user.create_dm()
+                await dm_channel.send(f"It's your turn to play! Please check in with Chai!")
             except:
                 pass  # Ignore if can't send DM
 
             # Update message
-            await interaction.response.send_message(
-                f"Pulled {username} from the queue!",
-                ephemeral=True
+            await interaction.response.edit_message(
+                content=f"Picked `{username}` from the queue!",
+                view=None,
+                embed=None
             )
 
             # Update puller message
             await self.cog.update_puller_message(self.channel_id, self.message_id)
         else:
-            await interaction.response.send_message(
-                "User not found!",
-                ephemeral=True
+            await interaction.response.edit_message(
+                content="User not found!",
+                view=None,
+                embed=None
             )
 
 # Event listener for queue updates
