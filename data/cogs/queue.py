@@ -77,7 +77,27 @@ class QueueSystem(commands.Cog):
 
         return twitch_sub_role_id in [role.id for role in member.roles]
 
-    async def update_queue_message(self, channel_id, message_id):
+    async def periodic_queue_update(self, channel_id):
+        """Periodically update the queue message with current count"""
+        while True:
+            try:
+                await asyncio.sleep(5)  # Wait 5 seconds
+
+                # Get the stored message ID
+                message_id = self.load_message_id()
+                if message_id:
+                    # Check if queue is disabled
+                    queue_disabled = os.path.exists(os.path.join(self.data_dir, "disablequeue"))
+
+                    await self.update_queue_message(channel_id, message_id, queue_disabled)
+
+            except asyncio.CancelledError:
+                break
+            except Exception as e:
+                print(f"Error in periodic update: {e}")
+                continue
+
+    async def update_queue_message(self, channel_id, message_id, queue_disabled=False):
         """Update the queue message with current count"""
         try:
             channel = self.bot.get_channel(channel_id)
@@ -89,31 +109,46 @@ class QueueSystem(commands.Cog):
             # Get current queue count
             count = await self.get_queue_count()
 
-            # Update embed with new count
+            # Update embed with new count or disabled message
             embed = message.embeds[0] if message.embeds else discord.Embed()
-            embed.title = f"Game Queue - {count} players"
-            embed.description = "Click the buttons below to join or leave the queue"
 
-            await message.edit(embed=embed)
+            if queue_disabled:
+                embed.title = "Game Queue - DISABLED"
+                embed.description = "Queue is currently disabled. If you were in the queue already, your spot is still saved."
+                embed.color = discord.Color.red()
+            else:
+                embed.title = f"Game Queue - {count} players"
+                embed.description = "Click the buttons below to join, leave, or check your place in the queue."
+                embed.color = discord.Color.blue()
+
+            # Update view with button state
+            view = QueueView(self, channel_id)
+            view.message_id = message_id
+
+            # Disable buttons if queue is disabled
+            if queue_disabled:
+                for child in view.children:
+                    print(child.label)
+                    if child.label == "Check My Place":
+                        continue
+                    elif isinstance(child, discord.ui.Button):
+                        child.disabled = True
+                        child.style = discord.ButtonStyle.secondary
+            else:
+                # Re-enable buttons and restore original styles
+                for child in view.children:
+                    if isinstance(child, discord.ui.Button):
+                        child.disabled = False
+                        # Restore original button styles
+                        if child.label == "Join Queue":
+                            child.style = discord.ButtonStyle.success
+                        elif child.label == "Leave Queue":
+                            child.style = discord.ButtonStyle.danger
+
+            await message.edit(embed=embed, view=view)
         except Exception as e:
             print(f"Error updating queue message: {e}")
 
-    async def periodic_queue_update(self, channel_id):
-        """Periodically update the queue message with current count"""
-        while True:
-            try:
-                await asyncio.sleep(5)  # Wait 5 seconds
-
-                # Get the stored message ID
-                message_id = self.load_message_id()
-                if message_id:
-                    await self.update_queue_message(channel_id, message_id)
-
-            except asyncio.CancelledError:
-                break
-            except Exception as e:
-                print(f"Error in periodic update: {e}")
-                continue
 
     async def setup_queue_message(self):
         """Set up the queue message on bot startup"""
@@ -291,7 +326,7 @@ class QueueView(discord.ui.View):
                 interaction,
                 "You're already in the queue!",
                 ephemeral=True,
-                delete_after_secs=5.0
+                delete_after_secs=10.0
             )
             conn.close()
             return
@@ -316,14 +351,14 @@ class QueueView(discord.ui.View):
                 interaction,
                 "You've been added to the queue as a Twitch subscriber!",
                 ephemeral=True,
-                delete_after_secs=5.0
+                delete_after_secs=10.0
             )
         else:
             await self.send_user_response(
                 interaction,
                 "You've been added to the queue!",
                 ephemeral=True,
-                delete_after_secs=5.0
+                delete_after_secs=10.0
             )
 
     @discord.ui.button(label="Leave Queue", style=discord.ButtonStyle.danger)
@@ -343,7 +378,7 @@ class QueueView(discord.ui.View):
                 interaction,
                 "You are not currently in the queue!",
                 ephemeral=True,
-                delete_after_secs=5.0
+                delete_after_secs=10.0
             )
             return
 
@@ -376,7 +411,7 @@ class QueueView(discord.ui.View):
                 interaction,
                 "You are not in the queue!",
                 ephemeral=True,
-                delete_after_secs=5.0
+                delete_after_secs=10.0
             )
         else:
             # Format the response based on position
