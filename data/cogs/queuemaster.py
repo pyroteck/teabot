@@ -265,9 +265,10 @@ class QueueMaster(commands.Cog):
         self.save_message_id(message.id)
         print(f"New puller message created with ID {message.id}")
 
-    async def refresh_queue_loop(self):  # Fixed: was missing 'self' parameter
+    async def refresh_queue_loop(self):
         """Refresh queue every 5 seconds"""
         await self.bot.wait_until_ready()
+        await asyncio.sleep(10)
         while True:
             try:
                 # Get channel ID from secrets

@@ -128,7 +128,6 @@ class QueueSystem(commands.Cog):
             # Disable buttons if queue is disabled
             if queue_disabled:
                 for child in view.children:
-                    print(child.label)
                     if child.label == "Check My Place":
                         continue
                     elif isinstance(child, discord.ui.Button):
