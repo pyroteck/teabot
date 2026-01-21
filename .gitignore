@@ -9,3 +9,6 @@ chat_logs/
 
 #Queue files
 queue_files/
+
+#Roll dbs
+user_dbs/
