@@ -338,7 +338,7 @@ class MasterView(discord.ui.View):
                 dm_channel = await user.create_dm()
                 await dm_channel.send(f"It's your turn to play! Please check in with Chai!")
             except:
-                pass  # Ignore errors if DM fails
+                print(f"Failed to send DM to user '{username}'")
 
             await interaction.response.send_message(
                 f"Picked subscriber `{username}` from the queue!",
@@ -420,6 +420,23 @@ class ConfirmClearView(discord.ui.View):
     @discord.ui.button(label="Yes", style=discord.ButtonStyle.danger)
     async def confirm_clear_button(self, interaction, button):
         """Confirm and clear the queue"""
+        
+        # Send clear message to all users in queue
+        users = await self.cog.get_queue_users()
+        if users:
+            for i in users:
+                user_id = i[0]
+                username = i[1]
+                
+                print(type(user_id))
+                
+                try:
+                    user = await self.cog.bot.fetch_user(user_id)
+                    dm_channel = await user.create_dm()
+                    await dm_channel.send("The game queue has been reset. You are no longer in the queue.")
+                except:
+                    print(f"Failed to send DM to user '{username}'")
+        
         # Clear the database
         conn = sqlite3.connect(self.cog.db_path)
         cursor = conn.cursor()
@@ -489,7 +506,7 @@ class UserSelectView(discord.ui.View):
                 dm_channel = await user.create_dm()
                 await dm_channel.send(f"It's your turn to play! Please check in with Chai!")
             except:
-                pass  # Ignore if can't send DM
+                print(f"Failed to send DM to user '{username}'")
 
             # Update message
             await interaction.response.edit_message(
