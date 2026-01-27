@@ -302,6 +302,8 @@ class QueueView(discord.ui.View):
     @discord.ui.button(label="Join Queue", style=discord.ButtonStyle.success)
     async def join_button(self, interaction, button):
         """Handle joining the queue"""
+        await interaction.response.defer(ephemeral=True)
+
         user_id = interaction.user.id
         username = interaction.user.name
         guild = interaction.guild
@@ -313,12 +315,11 @@ class QueueView(discord.ui.View):
         existing_user = cursor.fetchone()
 
         if existing_user:
-            await self.send_user_response(
-                interaction,
+            message = await interaction.followup.send(
                 "You're already in the queue!",
-                ephemeral=True,
-                delete_after_secs=10.0
+                ephemeral=True
             )
+            asyncio.create_task(self.delete_message_after_delay(message, 10))
             conn.close()
             return
 
@@ -334,22 +335,28 @@ class QueueView(discord.ui.View):
             conn.commit()
             conn.close()
 
-            await self.send_user_response(
-                interaction,
+            message = await interaction.followup.send(
                 "You've been added to the queue!",
-                ephemeral=True,
-                delete_after_secs=10.0
+                ephemeral=True
             )
-            
+            asyncio.create_task(self.delete_message_after_delay(message, 10))
+
             # Update queue message
             await self.cog.update_queue_message(self.channel_id, self.message_id)
         except:
-            await self.send_user_response(
-                interaction,
-                "Error joining the queue, please try joining again.",
-                ephemeral=True,
-                delete_after_secs=10.0
+            message = await interaction.followup.send(
+                "An error occurred while attempting to join the queue, please try joining again.",
+                ephemeral=True
             )
+            asyncio.create_task(self.delete_message_after_delay(message, 10))
+
+    async def delete_message_after_delay(self, message, delay):
+        """Delete a message after specified delay"""
+        await asyncio.sleep(delay)
+        try:
+            await message.delete()
+        except:
+            pass
 
     @discord.ui.button(label="Leave Queue", style=discord.ButtonStyle.danger)
     async def leave_button(self, interaction, button):
