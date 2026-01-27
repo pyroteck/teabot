@@ -306,14 +306,6 @@ class QueueView(discord.ui.View):
         username = interaction.user.name
         guild = interaction.guild
 
-        # Check if user already has a response message
-        if user_id in self.cog.user_response_messages:
-            try:
-                existing_message = self.cog.user_response_messages[user_id]
-                await existing_message.edit(content="Attempting to join queue...")
-            except:
-                pass
-
         # Check if user is already in queue
         conn = sqlite3.connect(self.cog.db_path)
         cursor = conn.cursor()
@@ -330,26 +322,34 @@ class QueueView(discord.ui.View):
             conn.close()
             return
 
-        # Check if user is a Twitch subscriber
-        is_subscriber = await self.cog.is_user_twitch_sub(user_id, guild)
+        try:
+            # Check if user is a Twitch subscriber
+            is_subscriber = await self.cog.is_user_twitch_sub(user_id, guild)
 
-        # Add user to queue
-        cursor.execute(
-            "INSERT INTO queue_users (user_id, username, is_subscriber) VALUES (?, ?, ?)",
-            (user_id, username, is_subscriber)
-        )
-        conn.commit()
-        conn.close()
+            # Add user to queue
+            cursor.execute(
+                "INSERT INTO queue_users (user_id, username, is_subscriber) VALUES (?, ?, ?)",
+                (user_id, username, is_subscriber)
+            )
+            conn.commit()
+            conn.close()
 
-        # Update queue message
-        await self.cog.update_queue_message(self.channel_id, self.message_id)
-
-        await self.send_user_response(
-            interaction,
-            "You've been added to the queue!",
-            ephemeral=True,
-            delete_after_secs=10.0
-        )
+            await self.send_user_response(
+                interaction,
+                "You've been added to the queue!",
+                ephemeral=True,
+                delete_after_secs=10.0
+            )
+            
+            # Update queue message
+            await self.cog.update_queue_message(self.channel_id, self.message_id)
+        except:
+            await self.send_user_response(
+                interaction,
+                "Error joining the queue, please try joining again.",
+                ephemeral=True,
+                delete_after_secs=10.0
+            )
 
     @discord.ui.button(label="Leave Queue", style=discord.ButtonStyle.danger)
     async def leave_button(self, interaction, button):
