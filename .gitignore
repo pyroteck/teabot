@@ -12,3 +12,6 @@ queue_files/
 
 #Roll dbs
 user_dbs/
+
+#Twitch thumbnail
+twitch_thumbnail.png
