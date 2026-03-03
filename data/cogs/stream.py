@@ -8,6 +8,7 @@ class Stream(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.alreadyLive = False
+        self.stream_message = None
         with open('secrets.json') as config_file:
             self.config = json.load(config_file)
 
@@ -25,7 +26,6 @@ class Stream(commands.Cog):
                 data = await response.json()
 
                 if data['data'] and not self.alreadyLive:
-                    # Get channel info for thumbnail
                     async with session.get(f'https://api.twitch.tv/helix/users?login={self.config["STREAMER_NAME"]}', headers={
                         'Client-ID': self.config["TWITCH_CLIENT_ID"],
                         'Authorization': f'Bearer {token}'
@@ -36,13 +36,11 @@ class Stream(commands.Cog):
                         print(data['data'][0])
 
                         if user_info:
-                            # Create embed
                             embed = Embed(
                                 title=self.config["STREAMER_NAME"],
                                 color=0x9146FF
                             )
 
-                            # Add stream title and thumbnail
                             stream_info = data['data'][0]
                             embed.add_field(name="", value=f"[{stream_info['title']}](https://www.twitch.tv/{self.config["STREAMER_NAME"]})", inline=False)
                             embed.set_image(url=stream_info['thumbnail_url'].replace('{width}x{height}', '1920x1080'))
@@ -51,16 +49,63 @@ class Stream(commands.Cog):
 
                             channel = self.bot.get_channel(int(self.config["GOING_LIVE_CHANNEL_ID"]))
                             if channel:
-                                await channel.send(f'{self.config["STREAMER_NAME"]} is now live! <https://www.twitch.tv/{self.config["STREAMER_NAME"]}> @everyone', embed=embed)
+                                self.stream_message = await channel.send(f'{self.config["STREAMER_NAME"]} is now live! <https://www.twitch.tv/{self.config["STREAMER_NAME"]}> @everyone', embed=embed)
                                 self.alreadyLive = True
                             else:
                                 print(f"Channel with ID {self.config['GOING_LIVE_CHANNEL_ID']} not found.")
                         else:
                             print("Could not get user info")
                 elif data['data'] and self.alreadyLive:
+                    # if stream is already live, do not send message and do not set variables false/none
                     pass
                 else:
                     self.alreadyLive = False
+                    self.stream_message = None
+
+    # When stream is live, update thumbnail every 6 minutes since Twitch updates the thumbnail every 5
+    @tasks.loop(minutes=6)
+    async def update_thumbnail(self):
+        if self.alreadyLive and self.stream_message:
+            async with aiohttp.ClientSession() as session:
+                token = await self.get_access_token(session)
+
+                async with session.get(f'https://api.twitch.tv/helix/streams?user_login={self.config["STREAMER_NAME"]}', headers={
+                    'Client-ID': self.config["TWITCH_CLIENT_ID"],
+                    'Authorization': f'Bearer {token}'
+                }) as response:
+                    data = await response.json()
+
+                    if data['data']:
+                        stream_info = data['data'][0]
+
+                        async with session.get(f'https://api.twitch.tv/helix/users?login={self.config["STREAMER_NAME"]}', headers={
+                            'Client-ID': self.config["TWITCH_CLIENT_ID"],
+                            'Authorization': f'Bearer {token}'
+                        }) as user_response:
+                            user_data = await user_response.json()
+                            user_info = user_data['data'][0] if user_data['data'] else None
+
+                            if user_info:
+                                # Update embed with new thumbnail
+                                embed = Embed(
+                                    title=self.config["STREAMER_NAME"],
+                                    color=0x9146FF
+                                )
+
+                                embed.add_field(name="", value=f"[{stream_info['title']}](https://www.twitch.tv/{self.config["STREAMER_NAME"]})", inline=False)
+                                embed.set_image(url=stream_info['thumbnail_url'].replace('{width}x{height}', '1920x1080'))
+                                embed.set_thumbnail(url=user_info['profile_image_url'])
+                                embed.timestamp = datetime.datetime.now()
+
+                                # Attempt to edit embed with new metadata
+                                try:
+                                    await self.stream_message.edit(embed=embed)
+                                except:
+                                    print("There was an error updating the stream message with new metadata.")
+                    else:
+                        # Stream ended, stop updating
+                        self.alreadyLive = False
+                        self.stream_message = None
 
     async def get_access_token(self, session):
         async with session.post('https://id.twitch.tv/oauth2/token', params={
@@ -71,6 +116,9 @@ class Stream(commands.Cog):
             data = await response.json()
             return data['access_token']
 
+    async def cog_load(self):
+        self.check_stream.start()
+        self.update_thumbnail.start()
 
 async def setup(bot):
     await bot.add_cog(Stream(bot))

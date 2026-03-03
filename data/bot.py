@@ -19,8 +19,5 @@ async def on_ready():
     await load_extensions()
     print(f'Logged in as {bot.user} (ID: {bot.user.id})')
     print('-----------------')
-    stream_cog = bot.get_cog('Stream')
-    if stream_cog:
-        stream_cog.check_stream.start()
 
 bot.run(config.get("CLIENT_TOKEN"))
