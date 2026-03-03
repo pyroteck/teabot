@@ -307,6 +307,8 @@ class MasterView(discord.ui.View):
     @discord.ui.button(label="Pull Top of Queue", style=discord.ButtonStyle.success)
     async def pull_top_button(self, interaction, button):
         """Pull the top user from queue"""
+        await interaction.response.defer(ephemeral=True)
+
         user_id, username = await self.cog.pull_top_user()
 
         if user_id:
@@ -318,18 +320,19 @@ class MasterView(discord.ui.View):
             except:
                 print(f"Failed to send DM to user '{username}'")
 
-            await interaction.response.send_message(
+            await interaction.followup.send(
                 f"Picked `{username}` from the queue!",
                 ephemeral=True
             )
 
             await self.cog.update_puller_message(self.channel_id, self.message_id)
         else:
-            await interaction.response.send_message("No users in queue.", ephemeral=True)
+            await interaction.followup.send("No users in queue.", ephemeral=True)
 
     @discord.ui.button(label="Pull Top of Subscriber Queue", style=discord.ButtonStyle.primary)
     async def pull_top_subscriber_button(self, interaction, button):
         """Pull the top subscriber from queue"""
+        await interaction.response.defer(ephemeral=True)
 
         user_id, username = await self.cog.pull_top_subscriber()
         if user_id:
@@ -340,22 +343,24 @@ class MasterView(discord.ui.View):
             except:
                 print(f"Failed to send DM to user '{username}'")
 
-            await interaction.response.send_message(
+            await interaction.followup.send(
                 f"Picked subscriber `{username}` from the queue!",
                 ephemeral=True
             )
 
             await self.cog.update_puller_message(self.channel_id, self.message_id)
         else:
-            await interaction.response.send_message("No subscribers in queue.", ephemeral=True)
+            await interaction.followup.send("No subscribers in queue.", ephemeral=True)
 
     @discord.ui.button(label="Pick from Queue", style=discord.ButtonStyle.secondary)
     async def pick_from_queue_button(self, interaction, button):
         """Open dropdown to pick user from queue"""
+        await interaction.response.defer(ephemeral=True)
+
         users = await self.cog.get_queue_users()
 
         if not users:
-            await interaction.response.send_message(
+            await interaction.followup.send(
                 "No users in queue to pick from!",
                 ephemeral=True
             )
@@ -369,14 +374,12 @@ class MasterView(discord.ui.View):
             color=discord.Color.blue()
         )
 
-        await interaction.response.send_message(embed=dropdown_embed, view=dropdown_view, ephemeral=True)
+        await interaction.followup.send(embed=dropdown_embed, view=dropdown_view, ephemeral=True)
 
     @discord.ui.button(label="Disable Queue", style=discord.ButtonStyle.danger)
     async def toggle_queue_button(self, interaction, button):
         """Toggle queue status"""
-        # Toggle queue status
         is_disabled = await self.cog.toggle_queue_status()
-
         # Create new view with updated button state
         new_view = MasterView(self.cog, self.channel_id)
         new_view.message_id = self.message_id

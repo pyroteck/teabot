@@ -84,7 +84,7 @@ class QueueSystem(commands.Cog):
                 await asyncio.sleep(5)  # Wait 5 seconds
 
                 # Get the stored message ID
-                message_id = self.load_message_id()
+                message_id = await self.load_message_id()
                 if message_id:
                     # Check if queue is disabled
                     queue_disabled = os.path.exists(os.path.join(self.data_dir, "disablequeue"))
@@ -184,7 +184,7 @@ class QueueSystem(commands.Cog):
         """Delete any existing queue message in the channel"""
         try:
             # Read the stored message ID
-            message_id = self.load_message_id()
+            message_id = await self.load_message_id()
             if message_id:
                 try:
                     # Try to delete the old message
@@ -198,11 +198,11 @@ class QueueSystem(commands.Cog):
                     # No permission to delete, that's fine
                     print("No permission to delete old queue message")
                 # Clear the stored message ID
-                self.save_message_id(None)
+                await self.save_message_id(None)
         except Exception as e:
             print(f"Error deleting existing queue message: {e}")
 
-    def load_message_id(self):
+    async def load_message_id(self):
         """Load the stored message ID from file"""
         try:
             if os.path.exists(self.message_id_file):
@@ -213,7 +213,7 @@ class QueueSystem(commands.Cog):
             print(f"Error loading message ID: {e}")
         return None
 
-    def save_message_id(self, message_id):
+    async def save_message_id(self, message_id):
         """Save the message ID to file"""
         try:
             with open(self.message_id_file, 'w') as f:
@@ -236,7 +236,7 @@ class QueueSystem(commands.Cog):
 
         # Store the message ID for later updates
         view.message_id = message.id
-        self.save_message_id(message.id)
+        await self.save_message_id(message.id)
         print(f"New queue message created with ID {message.id}")
 
         # Update the message to show current count
