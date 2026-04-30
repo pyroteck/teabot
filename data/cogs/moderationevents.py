@@ -50,9 +50,9 @@ class ModerationEvents(commands.Cog):
         role = discord.utils.get(member.guild.roles, id=role_id)
         if role:
             await member.add_roles(role)
-            print(f"Added {role.name} to {member.name}.")
+            print(f"[{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}] Added {role.name} to {member.name}.")
         else:
-            print(f"User {member.name} joined the server, but role with ID {role_id} not found.")
+            print(f"[{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}] User {member.name} joined the server, but role with ID {role_id} not found.")
 
         # Log the join event
         join_time = datetime.now(self.timezone)
@@ -68,7 +68,7 @@ class ModerationEvents(commands.Cog):
         logs_channel_id = int(self.config["LOGS_CHANNEL_ID"])
         logs_channel = self.bot.get_channel(logs_channel_id)  # Get the logs channel
         if not logs_channel:
-            print(f"Logs channel with ID {logs_channel_id} not found.")
+            print(f"[{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}] Logs channel with ID {logs_channel_id} not found.")
             return
 
         await logs_channel.send(embed=embed)
@@ -89,7 +89,7 @@ class ModerationEvents(commands.Cog):
         logs_channel_id = int(self.config["LOGS_CHANNEL_ID"])
         logs_channel = self.bot.get_channel(logs_channel_id)  # Get the logs channel
         if not logs_channel:
-            print(f"Logs channel with ID {logs_channel_id} not found.")
+            print(f"[{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}] Logs channel with ID {logs_channel_id} not found.")
             return
 
         await logs_channel.send(embed=embed)
@@ -129,11 +129,11 @@ class ModerationEvents(commands.Cog):
         
         # Check list in secrets if there's a message ID to ignore
         if str(payload.message_id) in self.ignored_message_ids:
-            print(f"Message with ID {message_id} was edited but is marked to be ignored.")
+            print(f"[{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}] Message with ID {message_id} was edited but is marked to be ignored.")
             return
 
         if message_id not in message_log:
-            print(f"Message with ID {message_id} not found in the log for channel {channel_id}.")
+            print(f"[{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}] Message with ID {message_id} not found in the log for channel {channel_id}.")
             return
 
         message_data = message_log[message_id]
@@ -141,18 +141,18 @@ class ModerationEvents(commands.Cog):
         guild_id = str(payload.guild_id)
         guild = self.bot.get_guild(int(guild_id))  # Get the guild
         if not guild:
-            print(f"Guild with ID {guild_id} not found.")
+            print(f"[{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}] Guild with ID {guild_id} not found.")
             return
 
         channel = guild.get_channel(int(channel_id))  # Get the channel
         if not channel:
-            print(f"Channel with ID {channel_id} not found.")
+            print(f"[{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}] Channel with ID {channel_id} not found.")
             return
 
         try:
             message = await channel.fetch_message(int(message_id))  # Fetch the message
         except discord.NotFound:
-            print(f"Message with ID {message_id} not found.")
+            print(f"[{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}] Message with ID {message_id} not found.")
             return
 
         if message.author.bot:
@@ -215,7 +215,7 @@ class ModerationEvents(commands.Cog):
         message_log = self.load_message_log(channel_id)
 
         if message_id not in message_log:
-            print(f"Message with ID {message_id} not found in the log for channel {channel_id}.")
+            print(f"[{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}] Message with ID {message_id} not found in the log for channel {channel_id}.")
             return
 
         message_data = message_log[message_id]
@@ -236,7 +236,7 @@ class ModerationEvents(commands.Cog):
         logs_channel_id = int(self.config["LOGS_CHANNEL_ID"])
         logs_channel = self.bot.get_channel(logs_channel_id)  # Get the logs channel
         if not logs_channel:
-            print(f"Logs channel with ID {logs_channel_id} not found.")
+            print(f"[{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}] Logs channel with ID {logs_channel_id} not found.")
             return
 
         await logs_channel.send(embed=embed)

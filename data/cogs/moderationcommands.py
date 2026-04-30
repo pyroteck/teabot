@@ -13,7 +13,7 @@ class ModerationCommands(commands.Cog):
         self.chat_logs_dir = "chat_logs"
         if not os.path.exists(self.chat_logs_dir):
             os.makedirs(self.chat_logs_dir)
-        self.pacific_tz = pytz.timezone(self.config["TIMEZONE"])
+        self.timezone = pytz.timezone(self.config["TIMEZONE"])
 
     def get_message_log_file(self, channel_id):
         return os.path.join(self.chat_logs_dir, f"message_log_{channel_id}.json")
@@ -41,7 +41,7 @@ class ModerationCommands(commands.Cog):
         try:
             # Convert the timestamp string to a datetime object
             after_time = datetime.strptime(timestamp, "%Y-%m-%d %H:%M:%S")
-            after_time = pytz.utc.localize(after_time).astimezone(self.pacific_tz)
+            after_time = pytz.utc.localize(after_time).astimezone(self.timezone)
         except ValueError:
             await ctx.send("Invalid timestamp format. Please use 'YYYY-MM-DD HH:MM:SS'.")
             return
@@ -75,7 +75,7 @@ class ModerationCommands(commands.Cog):
                     continue  # Ignore messages from bots
 
                 # Convert the message's created_at timestamp to the specified timezone
-                created_at_pacific = message.created_at.astimezone(self.pacific_tz)
+                created_at_tz = message.created_at.astimezone(self.timezone)
 
                 message_data = {
                     "author_id": str(message.author.id),
@@ -83,7 +83,7 @@ class ModerationCommands(commands.Cog):
                     "channel_id": channel_id,
                     "channel_name": channel.name,
                     "content": message.content,
-                    "created_at": created_at_pacific.strftime('%Y-%m-%d %H:%M:%S'),
+                    "created_at": created_at_tz.strftime('%Y-%m-%d %H:%M:%S'),
                     "jump_url": message.jump_url
                 }
 

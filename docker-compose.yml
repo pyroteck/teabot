@@ -4,10 +4,5 @@ services:
     container_name: teabot
     volumes:
       - ./data:/data
-    entrypoint: ["python", "bot.py"]
-    deploy:
-      resources:
-        limits:
-          cpus: '1'
-          memory: 1G
+    entrypoint: ["sh", "-c", "python -u bot.py 2>&1 | tee -a ./bot_output.log"]
     restart: unless-stopped

@@ -1,5 +1,5 @@
 import aiohttp
-import datetime
+from datetime import datetime
 import json
 import os
 from discord.ext import commands, tasks
@@ -63,7 +63,7 @@ class Stream(commands.Cog):
                                 embed.set_image(url="attachment://twitch_thumbnail.png")
                                 embed.set_thumbnail(url=user_info['profile_image_url'])
 
-                                self.stream_start_time = datetime.datetime.now()
+                                self.stream_start_time = datetime.now()
                                 embed.timestamp = self.stream_start_time
 
                                 channel = self.bot.get_channel(int(self.config["GOING_LIVE_CHANNEL_ID"]))
@@ -71,9 +71,9 @@ class Stream(commands.Cog):
                                     self.stream_message = await channel.send(f'{self.config["STREAMER_NAME"]} is now live! <https://www.twitch.tv/{self.config["STREAMER_NAME"]}> @everyone', embed=embed, file=file)
                                     self.alreadyLive = True
                                 else:
-                                    print(f"Channel with ID {self.config['GOING_LIVE_CHANNEL_ID']} not found.")
+                                    print(f"[{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}] Channel with ID {self.config['GOING_LIVE_CHANNEL_ID']} not found.")
                         else:
-                            print("Could not get user info")
+                            print(f"[{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}] Could not get user info")
                 elif data['data'] and self.alreadyLive:
                     # if stream is already live, do not send message and do not set variables false/none
                     pass
@@ -138,8 +138,8 @@ class Stream(commands.Cog):
                                     try:
                                         await self.stream_message.edit(embed=embed, attachments=[file])
                                     except Exception as e:
-                                        print("There was an error updating the stream message with new metadata.")
-                                        print(f"{e}")
+                                        print(f"[{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}] There was an error updating the stream message with new metadata.")
+                                        print(f"[{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}] {e}")
                     else:
                         # Stream ended, stop updating
                         self.alreadyLive = False
@@ -154,7 +154,7 @@ class Stream(commands.Cog):
                         with open(self.thumbnail_path, 'wb') as f:
                             f.write(await response.read())
         except Exception as e:
-            print(f"Error downloading thumbnail: {e}")
+            print(f"[{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}] Error downloading thumbnail: {e}")
 
     async def get_access_token(self, session):
         async with session.post('https://id.twitch.tv/oauth2/token', params={
