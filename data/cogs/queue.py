@@ -27,7 +27,7 @@ class QueueSystem(commands.Cog):
             with open('secrets.json', 'r') as f:
                 self.secrets = json.load(f)
         except FileNotFoundError:
-            print(f"[{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}] Secrets file not found!")
+            print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Secrets file not found!")
             self.secrets = {}
 
     def init_database(self):
@@ -95,7 +95,7 @@ class QueueSystem(commands.Cog):
             except asyncio.CancelledError:
                 break
             except Exception as e:
-                print(f"[{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}] Error in periodic update: {e}")
+                print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Error in periodic update: {e}")
                 continue
 
     async def update_queue_message(self, channel_id, message_id, queue_disabled=False):
@@ -147,7 +147,7 @@ class QueueSystem(commands.Cog):
 
             await message.edit(embed=embed, view=view)
         except Exception as e:
-            print(f"[{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}] Error updating queue message: {e}")
+            print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Error updating queue message: {e}")
 
 
     async def setup_queue_message(self):
@@ -157,18 +157,18 @@ class QueueSystem(commands.Cog):
         # Pull channel ID from secrets
         channel_id = self.secrets.get("QUEUE_CHANNEL_ID")
         if not channel_id:
-            print(f"[{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}] QUEUE_CHANNEL_ID not found in secrets file!")
+            print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] QUEUE_CHANNEL_ID not found in secrets file!")
             return
 
         try:
             channel_id = int(channel_id)
         except ValueError:
-            print(f"[{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}] Invalid channel ID in secrets file!")
+            print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Invalid channel ID in secrets file!")
             return
 
         channel = self.bot.get_channel(channel_id)
         if not channel:
-            print(f"[{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}] Channel with ID {channel_id} not found!")
+            print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Channel with ID {channel_id} not found!")
             return
 
         # Delete any existing queue message first
@@ -191,17 +191,17 @@ class QueueSystem(commands.Cog):
                     # Try to delete the old message
                     old_message = await channel.fetch_message(message_id)
                     await old_message.delete()
-                    print(f"[{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}] Deleted old queue message {message_id}")
+                    print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Deleted old queue message {message_id}")
                 except discord.NotFound:
                     # Message doesn't exist, that's fine
                     pass
                 except discord.Forbidden:
                     # No permission to delete, that's fine
-                    print(f"[{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}] No permission to delete old queue message")
+                    print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] No permission to delete old queue message")
                 # Clear the stored message ID
                 await self.save_message_id(None)
         except Exception as e:
-            print(f"[{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}] Error deleting existing queue message: {e}")
+            print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Error deleting existing queue message: {e}")
 
     async def load_message_id(self):
         """Load the stored message ID from file"""
@@ -211,7 +211,7 @@ class QueueSystem(commands.Cog):
                     content = f.read().strip()
                     return int(content) if content else None
         except Exception as e:
-            print(f"[{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}] Error loading message ID: {e}")
+            print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Error loading message ID: {e}")
         return None
 
     async def save_message_id(self, message_id):
@@ -220,7 +220,7 @@ class QueueSystem(commands.Cog):
             with open(self.message_id_file, 'w') as f:
                 f.write(str(message_id) if message_id else "")
         except Exception as e:
-            print(f"[{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}] Error saving message ID: {e}")
+            print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Error saving message ID: {e}")
 
     async def create_new_queue_message(self, channel, channel_id):
         """Create a new queue message and save its ID"""
@@ -238,7 +238,7 @@ class QueueSystem(commands.Cog):
         # Store the message ID for later updates
         view.message_id = message.id
         await self.save_message_id(message.id)
-        print(f"[{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}] New queue message created with ID {message.id}")
+        print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] New queue message created with ID {message.id}")
 
         # Update the message to show current count
         await self.update_queue_message(channel_id, message.id)

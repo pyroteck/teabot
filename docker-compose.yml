@@ -2,6 +2,10 @@ services:
   teabot:
     build: .
     container_name: teabot
+    dns:
+      - 9.9.9.9
+      - 149.112.112.112
+      - 1.1.1.1
     volumes:
       - ./data:/data
     entrypoint: ["sh", "-c", "python -u bot.py 2>&1 | tee -a ./bot_output.log"]

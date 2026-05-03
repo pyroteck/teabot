@@ -27,7 +27,7 @@ class QueueMaster(commands.Cog):
             with open('secrets.json', 'r') as f:
                 self.secrets = json.load(f)
         except FileNotFoundError:
-            print(f"[{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}] Secrets file not found!")
+            print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Secrets file not found!")
             self.secrets = {}
 
     def init_database(self):
@@ -174,7 +174,7 @@ class QueueMaster(commands.Cog):
 
             await message.edit(embed=embed, view=view)
         except Exception as e:
-            print(f"[{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}] Error updating puller message: {e}")
+            print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Error updating puller message: {e}")
 
     async def setup_puller_message(self):
         """Set up the puller message on bot startup"""
@@ -183,18 +183,18 @@ class QueueMaster(commands.Cog):
         # Pull channel ID from secrets
         channel_id = self.secrets.get("QUEUE_MASTER_CHANNEL_ID")
         if not channel_id:
-            print(f"[{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}] QUEUE_MASTER_CHANNEL_ID not found in secrets file!")
+            print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] QUEUE_MASTER_CHANNEL_ID not found in secrets file!")
             return
 
         try:
             channel_id = int(channel_id)
         except ValueError:
-            print(f"[{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}] Invalid channel ID in secrets file!")
+            print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Invalid channel ID in secrets file!")
             return
 
         channel = self.bot.get_channel(channel_id)
         if not channel:
-            print(f"[{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}] Channel with ID {channel_id} not found!")
+            print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Channel with ID {channel_id} not found!")
             return
 
         # Delete any existing puller message
@@ -213,17 +213,17 @@ class QueueMaster(commands.Cog):
                     # Try to delete the old message
                     old_message = await channel.fetch_message(message_id)
                     await old_message.delete()
-                    print(f"[{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}] Deleted old puller message {message_id}")
+                    print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Deleted old puller message {message_id}")
                 except discord.NotFound:
                     # Message doesn't exist, that's fine
                     pass
                 except discord.Forbidden:
                     # No permission to delete, that's fine
-                    print(f"[{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}] No permission to delete old puller message")
+                    print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] No permission to delete old puller message")
                 # Clear the stored message ID
                 self.save_message_id(None)
         except Exception as e:
-            print(f"[{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}] Error deleting existing puller message: {e}")
+            print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Error deleting existing puller message: {e}")
 
     def load_message_id(self):
         """Load the stored message ID from file"""
@@ -233,7 +233,7 @@ class QueueMaster(commands.Cog):
                     content = f.read().strip()
                     return int(content) if content else None
         except Exception as e:
-            print(f"[{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}] Error loading message ID: {e}")
+            print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Error loading message ID: {e}")
         return None
 
     def save_message_id(self, message_id):
@@ -242,7 +242,7 @@ class QueueMaster(commands.Cog):
             with open(self.message_id_file, 'w') as f:
                 f.write(str(message_id) if message_id else "")
         except Exception as e:
-            print(f"[{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}] Error saving message ID: {e}")
+            print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Error saving message ID: {e}")
 
     async def create_new_puller_message(self, channel, channel_id):
         """Create a new puller message and save its ID"""
@@ -264,7 +264,7 @@ class QueueMaster(commands.Cog):
         # Store the message ID for later updates
         view.message_id = message.id
         self.save_message_id(message.id)
-        print(f"[{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}] New puller message created with ID {message.id}")
+        print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] New puller message created with ID {message.id}")
 
     async def refresh_queue_loop(self):
         """Refresh queue every 5 seconds"""
@@ -295,7 +295,7 @@ class QueueMaster(commands.Cog):
                         await self.delete_existing_puller_message(channel)
                         await self.create_new_puller_message(channel, channel_id)
             except Exception as e:
-                print(f"[{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}] Error in refresh loop: {e}")
+                print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Error in refresh loop: {e}")
             await asyncio.sleep(5)
 
 class MasterView(discord.ui.View):
@@ -319,7 +319,7 @@ class MasterView(discord.ui.View):
                 dm_channel = await user.create_dm()
                 await dm_channel.send(f"It's your turn to play! Please check in with Chai!")
             except:
-                print(f"[{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}] Failed to send DM to user '{username}'")
+                print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Failed to send DM to user '{username}'")
 
             await interaction.followup.send(
                 f"Picked `{username}` from the queue!",
@@ -342,7 +342,7 @@ class MasterView(discord.ui.View):
                 dm_channel = await user.create_dm()
                 await dm_channel.send(f"It's your turn to play! Please check in with Chai!")
             except:
-                print(f"[{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}] Failed to send DM to user '{username}'")
+                print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Failed to send DM to user '{username}'")
 
             await interaction.followup.send(
                 f"Picked subscriber `{username}` from the queue!",
@@ -437,7 +437,7 @@ class ConfirmClearView(discord.ui.View):
                     dm_channel = await user.create_dm()
                     await dm_channel.send("The game queue has been reset. You are no longer in the queue.")
                 except:
-                    print(f"[{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}] Failed to send DM to user '{username}'")
+                    print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Failed to send DM to user '{username}'")
         
         # Clear the database
         conn = sqlite3.connect(self.cog.db_path)
@@ -508,7 +508,7 @@ class UserSelectView(discord.ui.View):
                 dm_channel = await user.create_dm()
                 await dm_channel.send(f"It's your turn to play! Please check in with Chai!")
             except:
-                print(f"[{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}] Failed to send DM to user '{username}'")
+                print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Failed to send DM to user '{username}'")
 
             # Update message
             await interaction.response.edit_message(

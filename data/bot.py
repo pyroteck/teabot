@@ -20,7 +20,7 @@ async def load_extensions():
 @bot.event
 async def on_ready():
     await load_extensions()
-    print(f"[{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}] Logged in as {bot.user} (ID: {bot.user.id})")
+    print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Logged in as {bot.user} (ID: {bot.user.id})")
     print('-----------------')
 
     moderation_cog = bot.get_cog('ModerationCommands')
@@ -29,10 +29,10 @@ async def on_ready():
 
 # Copy of logger commmand to run on every startup
 async def startup_logger(moderation_cog):
-    print(f"[{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}] Running startup message logging...")
+    print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Running startup message logging...")
 
     for guild in moderation_cog.bot.guilds:
-        print(f"[{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}] Processing messages for guild {guild.name}")
+        print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Processing messages for guild {guild.name}")
         total_messages_logged = 0
 
         for channel in guild.text_channels:
@@ -63,13 +63,13 @@ async def startup_logger(moderation_cog):
                         channel_messages_logged += 1
 
                 moderation_cog.save_message_log(channel_id, message_log)
-                print(f"[{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}] Logged {channel_messages_logged} messages for channel {channel.name}")
+                print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Logged {channel_messages_logged} messages for channel {channel.name}")
 
             except Exception as e:
-                timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                print(f"[{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}] Error processing channel {channel.name}: {e}")
+                timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Error processing channel {channel.name}: {e}")
 
-        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        print(f"[{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}] Completed logging for guild {guild.name}. Total messages logged: {total_messages_logged}")
+        timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Completed logging for guild {guild.name}. Total messages logged: {total_messages_logged}")
 
 bot.run(config.get("CLIENT_TOKEN"))
