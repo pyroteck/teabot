@@ -43,6 +43,15 @@ class QueueMaster(commands.Cog):
         conn.commit()
         conn.close()
 
+    async def get_queue_count(self):
+        """Get the current queue count"""
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+        cursor.execute("SELECT COUNT(*) FROM queue_users")
+        count = cursor.fetchone()[0]
+        conn.close()
+        return count
+
     async def get_queue_users(self):
         """Get all users in queue ordered by join time"""
         conn = sqlite3.connect(self.db_path)
@@ -292,27 +301,26 @@ class QueueMaster(commands.Cog):
     async def refresh_queue_loop(self):
         """Refresh queue every 5 seconds"""
         await self.bot.wait_until_ready()
-        await asyncio.sleep(10)
+        await asyncio.sleep(5)
+
+        last_count = -1
+
         while True:
             try:
-                # Get channel ID from secrets
-                channel_id = self.secrets.get("QUEUE_MASTER_CHANNEL_ID")
-                if not channel_id:
-                    await asyncio.sleep(5)
-                    continue
+                current_count = await self.get_queue_count()
 
-                try:
-                    channel_id = int(channel_id)
-                except ValueError:
-                    await asyncio.sleep(5)
-                    continue
+                if current_count != last_count:
+                    # Get channel ID from secrets
+                    channel_id = int(self.secrets.get("QUEUE_MASTER_CHANNEL_ID"))
 
-                # Load message ID
-                message_id = self.load_message_id()
-                if message_id:
-                    await self.update_puller_message(channel_id, message_id)
+                    message_id = self.load_message_id()
+                    if message_id:
+                        await self.update_puller_message(channel_id, message_id)
+                        last_count = current_count
+
             except Exception as e:
                 print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Error in refresh loop: {e}")
+
             await asyncio.sleep(5)
 
 class MasterView(discord.ui.View):
