@@ -197,10 +197,33 @@ class QueueMaster(commands.Cog):
             print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Channel with ID {channel_id} not found!")
             return
 
-        # Delete any existing puller message
-        await self.delete_existing_puller_message(channel)
+        # Try to load existing message ID first
+        message_id = self.load_message_id()
+        if message_id:
+            try:
+                # Try to fetch the existing message
+                message = await channel.fetch_message(message_id)
+                # If we get here, the message exists, so just set up the periodic updates
+                print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Found existing puller message {message_id}")
 
-        # Create new puller message
+                # Update the view to ensure buttons are properly set
+                view = MasterView(self, channel_id)
+                view.message_id = message_id
+
+                # Update the message to ensure it has the correct view
+                await self.update_puller_message(channel_id, message_id)
+
+                # Start periodic updates
+                self.bot.loop.create_task(self.refresh_queue_loop())
+                return
+            except discord.NotFound:
+                # Message doesn't exist, create a new one
+                pass
+            except discord.Forbidden:
+                print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] No permission to fetch puller message")
+                return
+
+        # Create new puller message if no valid existing message
         await self.create_new_puller_message(channel, channel_id)
 
     async def delete_existing_puller_message(self, channel):
@@ -288,12 +311,6 @@ class QueueMaster(commands.Cog):
                 message_id = self.load_message_id()
                 if message_id:
                     await self.update_puller_message(channel_id, message_id)
-                else:
-                    # If no message ID, try to recreate
-                    channel = self.bot.get_channel(channel_id)
-                    if channel:
-                        await self.delete_existing_puller_message(channel)
-                        await self.create_new_puller_message(channel, channel_id)
             except Exception as e:
                 print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Error in refresh loop: {e}")
             await asyncio.sleep(5)

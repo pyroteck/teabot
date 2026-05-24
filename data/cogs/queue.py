@@ -171,7 +171,33 @@ class QueueSystem(commands.Cog):
             print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Channel with ID {channel_id} not found!")
             return
 
-        # Delete any existing queue message first
+        # Try to load existing message ID first
+        message_id = await self.load_message_id()
+        if message_id:
+            try:
+                # Try to fetch the existing message
+                message = await channel.fetch_message(message_id)
+                # If we get here, the message exists, so just set up the periodic updates
+                print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Found existing queue message {message_id}")
+
+                # Update the view to ensure buttons are properly set
+                view = QueueView(self, channel_id)
+                view.message_id = message_id
+
+                # Update the message to ensure it has the correct view
+                await self.update_queue_message(channel_id, message_id)
+
+                # Start periodic updates
+                self.bot.loop.create_task(self.periodic_queue_update(channel_id))
+                return
+            except discord.NotFound:
+                # Message doesn't exist, create a new one
+                pass
+            except discord.Forbidden:
+                print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] No permission to fetch queue message")
+                return
+
+        # Delete any existing queue message first (if we're creating a new one)
         await self.delete_existing_queue_message(channel)
 
         # Create new queue message
@@ -455,7 +481,7 @@ class ConfirmView(discord.ui.View):
                 color=discord.Color.green()
             )
             await interaction.response.edit_message(embed=success_embed, view=None, delete_after=5.0)
-            
+
             # Update the main queue message
             await self.cog.update_queue_message(self.channel_id, self.message_id)
         except:
