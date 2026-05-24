@@ -6,6 +6,8 @@ __pycache__
 
 #Generated logs
 chat_logs/
+bot_logs/
+bot_output.log
 
 #Queue files
 queue_files/

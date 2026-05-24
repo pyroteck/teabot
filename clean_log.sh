@@ -10,7 +10,13 @@ if [ ! -f "$input_file" ]; then
     exit 1
 fi
 
-# Process the file in-place using sed
-sed -i '/rate limited\|^[[:space:]]*$/d' "$input_file"
+# Create cleaned_logs directory if it doesn't exist
+mkdir -p "./bot_logs"
 
-echo "Processed $input_file"
+# Generate output filename with date and time in MM-DD-YYYY_HH-MM-SS format
+output_file="./bot_logs/$(date +%m-%d-%Y_%H-%M-%S)_output-cleaned.log"
+
+# Process the file and create new output file
+sed '/rate limited\|^[[:space:]]*$/d' "$input_file" > "$output_file"
+
+echo "Processed $input_file -> $output_file"
