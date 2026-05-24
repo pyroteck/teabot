@@ -81,18 +81,20 @@ class QueueSystem(commands.Cog):
     async def periodic_queue_update(self, channel_id):
         """Periodically update the queue message with current count"""
         last_count = -1
+        last_queue_disabled_status = None
 
         while True:
             try:
                 current_count = await self.get_queue_count()
+                queue_disabled_current_status = os.path.exists(os.path.join(self.data_dir, "disablequeue"))
 
                 # Only attempt to update if count changed
-                if current_count != last_count:
+                if current_count != last_count or last_queue_disabled_status != queue_disabled_current_status:
                     message_id = await self.load_message_id()
                     if message_id:
-                        queue_disabled = os.path.exists(os.path.join(self.data_dir, "disablequeue"))
-                        await self.update_queue_message(channel_id, message_id, queue_disabled)
+                        await self.update_queue_message(channel_id, message_id, queue_disabled_current_status)
                         last_count = current_count
+                        last_queue_disabled_status = queue_disabled_current_status
 
             except asyncio.CancelledError:
                 break
