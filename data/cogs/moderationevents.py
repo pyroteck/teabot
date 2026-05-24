@@ -120,7 +120,7 @@ class ModerationEvents(commands.Cog):
 
     @commands.Cog.listener()
     async def on_raw_message_edit(self, payload: discord.RawMessageUpdateEvent):
-        if payload.cached_message and payload.cached_message.author.bot:
+        if payload.data.get('author', {}).get('bot', False):
             return  # Ignore messages from bots
         
         message_id = str(payload.message_id)
@@ -154,9 +154,6 @@ class ModerationEvents(commands.Cog):
         except discord.NotFound:
             print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Message with ID {message_id} not found.")
             return
-
-        if message.author.bot:
-            return  # Ignore messages from bots
 
         if message_data["content"] == message.content:
             return  # Ignore if the content hasn't changed
@@ -207,7 +204,7 @@ class ModerationEvents(commands.Cog):
 
     @commands.Cog.listener()
     async def on_raw_message_delete(self, payload: discord.RawMessageDeleteEvent):
-        if payload.cached_message and payload.cached_message.author.bot:
+        if payload.data.get('author', {}).get('bot', False):
             return  # Ignore messages from bots
         
         message_id = str(payload.message_id)
