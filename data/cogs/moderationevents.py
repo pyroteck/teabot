@@ -204,7 +204,7 @@ class ModerationEvents(commands.Cog):
 
     @commands.Cog.listener()
     async def on_raw_message_delete(self, payload: discord.RawMessageDeleteEvent):
-        if payload.data.get('author', {}).get('bot', False):
+        if payload.cached_message.author.bot:
             return  # Ignore messages from bots
         
         message_id = str(payload.message_id)
