@@ -2,7 +2,9 @@
 
 A Discord bot written in Python ([discord.py](https://discordpy.readthedocs.io/en/stable/)).
 
-Created for use in [thechachachai's](https://www.twitch.tv/thechachachai) Discord channel, but designed with the intention to be used by anyone. 
+Created for use in [thechachachai's](https://www.twitch.tv/thechachachai) Discord channel, but designed with the ability to be used by anyone.
+
+This bot is designed to be used as a single guild bot. It will most likely not run as intended if it is added to multiple servers.
 
 &nbsp;
 
@@ -23,21 +25,29 @@ Create a file in the source directory named `secrets.json` with the following:
     "LOGS_CHANNEL_ID": "",
     "TIMEZONE": "",
     "IGNORED_MESSAGE_IDS": [],
-    "ALTERNATE_LOG_CHANNEL": []
+    "ALTERNATE_LOG_CHANNEL": [],
+    "IGNORED_CHANNEL_IDS": [],
+    "QUEUE_CHANNEL_ID": "",
+    "QUEUE_MASTER_CHANNEL_ID": "",
+    "TWITCH_SUB_ROLE_ID": ""
 }
 ```
 Add the following data in the quotes:
 ```
-CLIENT_TOKEN:           Your Discord bot application's token
-TWITCH_CLIENT_ID:       Twitch client ID token
-TWITCH_CLIENT_SECRET:   Twitch client secret token
-STREAMER_NAME:          Twitch streamer's name to check for going live
-GOING_LIVE_CHANNEL_ID:  Channel ID to send a message to @everyone when the bot detects the streamer going live.
-NEW_USER_JOIN_ROLE_ID:  Role ID to automatically assign to new users
-LOGS_CHANNEL_ID:        Channel ID for the bot to send moderation logs to.
-TIMEZONE:               Timezone for your bot to refer to
-IGNORED_MESSAGE_IDS:    List of message IDs that you want the bot to ignore edits of.
-ALTERNATE_LOG_CHANNEL:  "Key, value" list of specific message IDs you'd like to send to an alternate channel ID. ["channel_id: message_id, message_id", ...]
+CLIENT_TOKEN:               Your Discord bot application's token
+TWITCH_CLIENT_ID:           Twitch client ID token
+TWITCH_CLIENT_SECRET:       Twitch client secret token
+STREAMER_NAME:              Twitch streamer's name to check for going live
+GOING_LIVE_CHANNEL_ID:      Channel ID to send a message to @everyone when the bot detects the streamer going live.
+NEW_USER_JOIN_ROLE_ID:      Role ID to automatically assign to new users
+LOGS_CHANNEL_ID:            Channel ID for the bot to send moderation logs to.
+TIMEZONE:                   Timezone for your bot to refer to
+IGNORED_MESSAGE_IDS:        List of message IDs that you want the bot to ignore edits of.
+ALTERNATE_LOG_CHANNEL:      "Key, value" list of specific message IDs you'd like to send to an alternate channel ID. ["channel_id: message_id, message_id", ...]
+IGNORED_CHANNEL_ID:         List of channel IDs to ignore logging for.
+QUEUE_CHANNEL_ID:           Channel ID for the queue system.
+QUEUE_MASTER_CHANNEL_ID:    Channel ID for the queue master system.
+TWITCH_SUB_ROLE_ID:         Twitch subscriber role ID for the queue system.
 ```
 
 For a full list of valid timezones, refer to [this list](https://gist.github.com/heyalexej/8bf688fd67d7199be4a1682b3eec7568).
