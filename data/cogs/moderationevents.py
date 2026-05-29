@@ -204,15 +204,24 @@ class ModerationEvents(commands.Cog):
 
     @commands.Cog.listener()
     async def on_raw_message_delete(self, payload: discord.RawMessageDeleteEvent):
-        if payload.cached_message.author.bot:
-            return  # Ignore messages from bots
-        
         message_id = str(payload.message_id)
         channel_id = str(payload.channel_id)
+
+        message_not_in_cache = False
+        try:
+            if payload.cached_message.author.bot:
+                return  # Ignore messages from bots
+        except:
+            message_not_in_cache = True
+
         message_log = self.load_message_log(channel_id)
 
         if message_id not in message_log:
-            print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Message with ID {message_id} not found in the log for channel {channel_id}.")
+            if message_not_in_cache:
+                # Seeing this message in the log file likely means that the message came from a bot since bot messages aren't logged
+                print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Message with ID {message_id} not found in the log for channel {channel_id}, and was not cached.")
+            else:
+                print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Message with ID {message_id} not found in the log for channel {channel_id}.")
             return
 
         message_data = message_log[message_id]
