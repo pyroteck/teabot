@@ -51,10 +51,7 @@ class Stream(commands.Cog):
 
                                 embed.add_field(
                                     name="",
-                                    value=f"""
-                                    [{stream_info['user_name']}](https://www.twitch.tv/{stream_info['user_login']})
-                                    {stream_info['game_name']}
-                                    """,
+                                    value=f"[{stream_info['user_name']}](https://www.twitch.tv/{stream_info['user_login']})\n{stream_info['game_name']}",
                                     inline=False
                                 )
 
@@ -127,10 +124,7 @@ class Stream(commands.Cog):
 
                                     embed.add_field(
                                         name="",
-                                        value=f"""
-                                        [{stream_info['user_name']}](https://www.twitch.tv/{stream_info['user_login']})
-                                        {stream_info['game_name']}
-                                        """,
+                                        value=f"[{stream_info['user_name']}](https://www.twitch.tv/{stream_info['user_login']})\n{stream_info['game_name']}",
                                         inline=False
                                     )
 
