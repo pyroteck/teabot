@@ -252,7 +252,6 @@ class ModerationEvents(commands.Cog):
             diff_preview = None
             if diff:
                 # Check if diff is too long and truncate appropriately
-                print(len(diff))
                 if len(diff) > 1000:  # Discord embed limit
                     truncated_diff = ''.join(diff[:15])  # Show first 15 lines
                     if len(diff) > 15:
