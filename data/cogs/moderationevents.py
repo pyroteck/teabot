@@ -176,15 +176,11 @@ class ModerationEvents(commands.Cog):
 
         # For single-line messages, create word-level highlighting
         if '\n' not in original_content and '\n' not in edited_content:
-            # Split into words for word-level diff
-            original_words = re.split(r'(\s+)', original_content)
-            edited_words = re.split(r'(\s+)', edited_content)
+            original_words = list(original_content)
+            edited_words = list(edited_content)
 
-            # Create highlighted versions using Discord's formatting
             highlighted_original = ""
             highlighted_edited = ""
-
-            # Use difflib to get the opcodes for word-level comparison
             matcher = difflib.SequenceMatcher(None, original_words, edited_words)
 
             # Create git diff-like formatting using ansi highlight codes
