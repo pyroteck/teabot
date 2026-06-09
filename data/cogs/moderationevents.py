@@ -174,111 +174,43 @@ class ModerationEvents(commands.Cog):
         original_content = message_data["content"]
         edited_content = message.content
 
-        # For single-line messages, create word-level highlighting
-        if '\n' not in original_content and '\n' not in edited_content:
-            original_words = list(original_content)
-            edited_words = list(edited_content)
+        original_words = list(original_content)
+        edited_words = list(edited_content)
 
-            highlighted_original = ""
-            highlighted_edited = ""
-            matcher = difflib.SequenceMatcher(None, original_words, edited_words)
+        highlighted_original = ""
+        highlighted_edited = ""
+        matcher = difflib.SequenceMatcher(None, original_words, edited_words)
 
-            # Create git diff-like formatting using ansi highlight codes
-            for tag, i1, i2, j1, j2 in matcher.get_opcodes():
-                if tag == 'equal':
-                    highlighted_original += "".join(original_words[i1:i2])
-                    highlighted_edited += "".join(edited_words[j1:j2])
-                elif tag == 'delete':
-                    highlighted_original += f"[2;41m{''.join(original_words[i1:i2])}[0m"
-                    highlighted_edited += ""
-                elif tag == 'insert':
-                    highlighted_original += ""
-                    highlighted_edited += f"[2;42m{''.join(edited_words[j1:j2])}[0m"
-                elif tag == 'replace':
-                    highlighted_original += f"[2;41m{''.join(original_words[i1:i2])}[0m"
-                    highlighted_edited += f"[2;42m{''.join(edited_words[j1:j2])}[0m"
+        # Create git diff-like formatting using ansi highlight codes
+        for tag, i1, i2, j1, j2 in matcher.get_opcodes():
+            if tag == 'equal':
+                highlighted_original += "".join(original_words[i1:i2])
+                highlighted_edited += "".join(edited_words[j1:j2])
+            elif tag == 'delete':
+                highlighted_original += f"[2;41m{''.join(original_words[i1:i2])}[0m"
+                highlighted_edited += ""
+            elif tag == 'insert':
+                highlighted_original += ""
+                highlighted_edited += f"[2;42m{''.join(edited_words[j1:j2])}[0m"
+            elif tag == 'replace':
+                highlighted_original += f"[2;41m{''.join(original_words[i1:i2])}[0m"
+                highlighted_edited += f"[2;42m{''.join(edited_words[j1:j2])}[0m"
 
-            # Remove trailing spaces
-            highlighted_original = highlighted_original.rstrip()
-            highlighted_edited = highlighted_edited.rstrip()
+        # Remove trailing spaces
+        highlighted_original = highlighted_original.rstrip()
+        highlighted_edited = highlighted_edited.rstrip()
 
-            # Create embed with proper formatting
-            embed = discord.Embed(
-                title="Message Edited",
-                color=discord.Color.og_blurple(),
-                timestamp=edited_at_pacific
-            )
-            embed.add_field(name="Author", value=message.author.mention, inline=False)
-            embed.add_field(name="Channel", value=message.channel.mention, inline=False)
-            embed.add_field(name="Before", value=f"```ansi\n{highlighted_original}```", inline=False)
-            embed.add_field(name="After", value=f"```ansi\n{highlighted_edited}```", inline=False)
-            embed.add_field(name="Message Link", value=message.jump_url, inline=False)
-        else:
-            # Handle multi-line messages with full content preservation
-            # Split content into lines
-            original_lines = original_content.splitlines(keepends=True)
-            edited_lines = edited_content.splitlines(keepends=True)
-
-            # Generate unified diff
-            diff = list(difflib.unified_diff(
-                original_lines,
-                edited_lines,
-                fromfile='original',
-                tofile='edited',
-                lineterm=''
-            ))
-
-            # Add newlines to first parts of diff message
-            for i in range(2, 0, -1):
-                diff.insert(i, '\n')
-
-            # Add newline before diff line headers
-            pattern = r'^@@ [-+]\d+(?:,\d+)? [-+]\d+(?:,\d+)? @@$'
-            regex_result = []
-            for line in diff:
-                if re.match(pattern, line):
-                    regex_result.append('\n')
-                    regex_result.append(line)
-                    regex_result.append('\n')
-                else:
-                    regex_result.append(line)
-            diff = regex_result
-
-            # Format diff for Discord - show full diff instead of truncated preview
-            diff_preview = None
-            if diff:
-                # Check if diff is too long and truncate appropriately
-                if len(diff) > 1000:  # Discord embed limit
-                    truncated_diff = ''.join(diff[:15])  # Show first 15 lines
-                    if len(diff) > 15:
-                        truncated_diff += f"\n... and {len(diff) - 15} more lines (full diff truncated)"
-                    diff_preview = truncated_diff
-                else:
-                    diff_preview = ''.join(diff)
-
-            # Create embed with full original content preserved
-            embed = discord.Embed(
-                title="Message Edited",
-                color=discord.Color.og_blurple(),
-                timestamp=edited_at_pacific
-            )
-            embed.add_field(name="Author", value=message.author.mention, inline=False)
-            embed.add_field(name="Channel", value=message.channel.mention, inline=False)
-
-            # Show full content in separate fields with proper formatting
-            if len(original_content) <= 1020:
-                embed.add_field(name="Original Message", value=f"{original_content}", inline=False)
-
-            # Show the complete diff in a separate field
-            if diff_preview != None:
-                if len(diff_preview) > 1020:
-                    # Truncate diff to fit in field
-                    diff_preview = diff_preview[:1020] + "..."
-                embed.add_field(name="Diff", value=f"```diff\n{diff_preview}\n```", inline=False)
-            else:
-                embed.add_field(name="Diff", value="No differences found", inline=False)
-
-            embed.add_field(name="Message Link", value=message.jump_url, inline=False)
+        # Create embed with proper formatting
+        embed = discord.Embed(
+            title="Message Edited",
+            color=discord.Color.og_blurple(),
+            timestamp=edited_at_pacific
+        )
+        embed.add_field(name="Author", value=message.author.mention, inline=False)
+        embed.add_field(name="Channel", value=message.channel.mention, inline=False)
+        embed.add_field(name="Before", value=f"```ansi\n{highlighted_original}```", inline=False)
+        embed.add_field(name="After", value=f"```ansi\n{highlighted_edited}```", inline=False)
+        embed.add_field(name="Message Link", value=message.jump_url, inline=False)
 
         if alternate_channel_id:
             logs_channel = self.bot.get_channel(int(alternate_channel_id))
