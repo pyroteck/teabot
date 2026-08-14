@@ -29,7 +29,8 @@ Create a file in the source directory named `secrets.json` with the following:
     "IGNORED_CHANNEL_IDS": [],
     "QUEUE_CHANNEL_ID": "",
     "QUEUE_MASTER_CHANNEL_ID": "",
-    "TWITCH_SUB_ROLE_ID": ""
+    "TWITCH_SUB_ROLE_ID": "",
+    "GAME_UPDATE_ROLE_ID": ""
 }
 ```
 Add the following data in the quotes:
@@ -48,6 +49,7 @@ IGNORED_CHANNEL_ID:         List of channel IDs to ignore logging for.
 QUEUE_CHANNEL_ID:           Channel ID for the queue system.
 QUEUE_MASTER_CHANNEL_ID:    Channel ID for the queue master system.
 TWITCH_SUB_ROLE_ID:         Twitch subscriber role ID for the queue system.
+GAME_UPDATE_ROLE_ID:        Role ID to have bot mention when stream changes categories.
 ```
 
 For a full list of valid timezones, refer to [this list](https://gist.github.com/heyalexej/8bf688fd67d7199be4a1682b3eec7568).

@@ -10,8 +10,10 @@ class Stream(commands.Cog):
         self.bot = bot
         self.alreadyLive = True # initially set to True so that messasge doesn't get sent on bot startup if already live
         self.stream_message = None
-        self.stream_start_time = None
+        self.stream_embed_time = None
         self.thumbnail_path = "twitch_thumbnail.png"
+        self.previous_game = None
+        self.embed_color = None
         with open('secrets.json') as config_file:
             self.config = json.load(config_file)
 
@@ -30,6 +32,7 @@ class Stream(commands.Cog):
                     data = await response.json()
 
                     if data['data'] and not self.alreadyLive:
+                        # Stream just went live
                         async with session.get(f'https://api.twitch.tv/helix/users?login={self.config["STREAMER_NAME"]}', headers={
                             'Client-ID': self.config["TWITCH_CLIENT_ID"],
                             'Authorization': f'Bearer {token}'
@@ -43,10 +46,11 @@ class Stream(commands.Cog):
                                 await self.download_thumbnail(thumbnail_url)
 
                                 stream_info = data['data'][0]
+                                self.embed_color = 0xFAFBDB
 
                                 embed = Embed(
                                     title=stream_info['title'],
-                                    color=0x9146FF
+                                    color=self.embed_color
                                 )
 
                                 embed.add_field(
@@ -61,8 +65,9 @@ class Stream(commands.Cog):
                                     embed.set_image(url="attachment://twitch_thumbnail.png")
                                     embed.set_thumbnail(url=user_info['profile_image_url'])
 
-                                    self.stream_start_time = datetime.now()
-                                    embed.timestamp = self.stream_start_time
+                                    self.stream_embed_time = datetime.now()
+                                    embed.timestamp = self.stream_embed_time
+                                    self.previous_game = stream_info['game_name']
 
                                     channel = self.bot.get_channel(int(self.config["GOING_LIVE_CHANNEL_ID"]))
                                     if channel:
@@ -73,11 +78,60 @@ class Stream(commands.Cog):
                             else:
                                 print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Could not get user info")
                     elif data['data'] and self.alreadyLive:
-                        # if stream is already live, do not send message and do not set variables false/none
-                        pass
+                        # Stream is already live, check for game changes only
+                        stream_info = data['data'][0]
+                        current_game = stream_info['game_name']
+
+                        # Check if game changed
+                        if current_game != self.previous_game:
+                            # Get user info for the new message
+                            async with session.get(f'https://api.twitch.tv/helix/users?login={self.config["STREAMER_NAME"]}', headers={
+                                'Client-ID': self.config["TWITCH_CLIENT_ID"],
+                                'Authorization': f'Bearer {token}'
+                            }) as user_response:
+                                user_data = await user_response.json()
+                                user_info = user_data['data'][0] if user_data['data'] else None
+
+                                if user_info:
+                                    # Download new thumbnail
+                                    thumbnail_url = stream_info['thumbnail_url'].replace('{width}x{height}', '1920x1080')
+                                    await self.download_thumbnail(thumbnail_url)
+
+                                    self.embed_color = 0x266248
+
+                                    # Create new embed with updated info
+                                    embed = Embed(
+                                        title=stream_info['title'],
+                                        color=self.embed_color
+                                    )
+
+                                    embed.add_field(
+                                        name="",
+                                        value=f"[{stream_info['user_name']}](https://www.twitch.tv/{stream_info['user_login']})\n{stream_info['game_name']}",
+                                        inline=False
+                                    )
+
+                                    # Set thumbnail from file attachment
+                                    if os.path.exists(self.thumbnail_path):
+                                        file = File(self.thumbnail_path, filename="twitch_thumbnail.png")
+                                        embed.set_image(url="attachment://twitch_thumbnail.png")
+                                        embed.set_thumbnail(url=user_info['profile_image_url'])
+                                        self.stream_embed_time = datetime.now()
+                                        embed.timestamp = self.stream_embed_time
+
+                                        # Send new notification for game change
+                                        channel = self.bot.get_channel(int(self.config["GOING_LIVE_CHANNEL_ID"]))
+                                        if channel:
+                                            self.stream_message = await channel.send(f'{self.config["STREAMER_NAME"]} has changed categories! Now in: `{stream_info["game_name"]}` <@&{self.config["GAME_UPDATE_ROLE_ID"]}>', embed=embed, file=file)
+
+                                        # Update tracking variable
+                                        self.previous_game = current_game
                     else:
+                        # Stream ended
                         self.alreadyLive = False
                         self.stream_message = None
+                        self.previous_game = None
+                        self.embed_color = None
                         # Clean up thumbnail file
                         if os.path.exists(self.thumbnail_path):
                             os.remove(self.thumbnail_path)
@@ -119,7 +173,7 @@ class Stream(commands.Cog):
                                     # Update embed with new metadata
                                     embed = Embed(
                                         title=stream_info['title'],
-                                        color=0x9146FF
+                                        color=self.embed_color
                                     )
 
                                     embed.add_field(
@@ -133,7 +187,7 @@ class Stream(commands.Cog):
                                         file = File(self.thumbnail_path, filename="twitch_thumbnail.png")
                                         embed.set_image(url="attachment://twitch_thumbnail.png")
                                         embed.set_thumbnail(url=user_info['profile_image_url'])
-                                        embed.timestamp = self.stream_start_time
+                                        embed.timestamp = self.stream_embed_time
 
                                         try:
                                             await self.stream_message.edit(embed=embed, attachments=[file])
@@ -144,6 +198,7 @@ class Stream(commands.Cog):
                             # Stream ended, stop updating
                             self.alreadyLive = False
                             self.stream_message = None
+                            self.previous_game = None
             except aiohttp.ClientError as e:
                 print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] (stream.py) Network error in update_thumbnail: {e}")
             except Exception as e:

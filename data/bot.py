@@ -14,7 +14,7 @@ bot = commands.Bot(command_prefix='$', intents=intents)
 timezone = pytz.timezone(config["TIMEZONE"])
 
 async def load_extensions():
-    for filename in ['d20', 'general', 'moderationcommands', 'moderationevents', 'stream', 'queue', 'queuemaster']:
+    for filename in ['d20', 'general', 'commands', 'moderationevents', 'stream', 'queue', 'queuemaster']:
         await bot.load_extension(f"cogs.{filename}")
 
 @bot.event
@@ -23,21 +23,21 @@ async def on_ready():
     print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Logged in as {bot.user} (ID: {bot.user.id})")
     print('-----------------')
 
-    moderation_cog = bot.get_cog('ModerationCommands')
-    if moderation_cog:
-        await startup_logger(moderation_cog)
+    command_cog = bot.get_cog('Commands')
+    if command_cog:
+        await startup_logger(command_cog)
 
 # Copy of logger commmand to run on every startup
-async def startup_logger(moderation_cog):
+async def startup_logger(command_cog):
     print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Running startup message logging...")
 
-    for guild in moderation_cog.bot.guilds:
+    for guild in command_cog.bot.guilds:
         print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Processing messages for guild {guild.name}")
         total_messages_logged = 0
 
         for channel in guild.text_channels:
             channel_id = str(channel.id)
-            message_log = moderation_cog.load_message_log(channel_id)
+            message_log = command_cog.load_message_log(channel_id)
             channel_messages_logged = 0
 
             try:
@@ -62,7 +62,7 @@ async def startup_logger(moderation_cog):
                         total_messages_logged += 1
                         channel_messages_logged += 1
 
-                moderation_cog.save_message_log(channel_id, message_log)
+                command_cog.save_message_log(channel_id, message_log)
                 print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Logged {channel_messages_logged} messages for channel {channel.name}")
 
             except Exception as e:

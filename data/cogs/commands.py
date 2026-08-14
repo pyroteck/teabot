@@ -5,7 +5,7 @@ import json
 import os
 import pytz
 
-class ModerationCommands(commands.Cog):
+class Commands(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         with open('secrets.json') as config_file:
@@ -107,5 +107,31 @@ class ModerationCommands(commands.Cog):
         else:
              await ctx.reply('Command tree synced.')
 
+    @commands.hybrid_command(name="pingme", description="Add or remove the role to get notified of category changes during livestreams.")
+    async def pingme(self, ctx):
+        guild = ctx.guild
+        try:
+            role = guild.get_role(int(self.config["GAME_UPDATE_ROLE_ID"]))
+            if role in ctx.author.roles:
+                await ctx.author.remove_roles(role)
+                if isinstance(ctx.interaction, discord.Interaction):
+                    await ctx.reply(f"Removed role `{role.name}`.", ephemeral=True)
+                else:
+                    await ctx.reply(f"Removed role `{role.name}`.")
+                print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] (commands.py) pingme command: '{role.name}' removed from user {ctx.message.author.display_name}")
+            else:
+                await ctx.author.add_roles(role)
+                if isinstance(ctx.interaction, discord.Interaction):
+                    await ctx.reply(f"Added role `{role.name}`!", ephemeral=True)
+                else:
+                    await ctx.reply(f"Added role `{role.name}`!")
+                print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] (commands.py) pingme command: '{role.name}' added to user {ctx.message.author.display_name}")
+        except Exception as e:
+            if isinstance(ctx.interaction, discord.Interaction):
+                await ctx.reply("An error occurred when trying to add your role. Please try again.", ephemeral=True)
+            else:
+                await ctx.reply("An error occurred when trying to add your role. Please try again.")
+            print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] (commands.py) Error: {e}")
+
 async def setup(bot):
-    await bot.add_cog(ModerationCommands(bot))
+    await bot.add_cog(Commands(bot))
