@@ -1,5 +1,6 @@
 from datetime import datetime
 import discord
+from discord import app_commands
 from discord.ext import commands
 import json
 import os
@@ -31,8 +32,10 @@ class Commands(commands.Cog):
         with open(file_path, 'w') as f:
             json.dump(message_log, f, indent=4)
 
-    @commands.command(hidden=True)
+    @commands.hybrid_command(hidden=True)
     @commands.has_permissions(administrator=True)
+    @app_commands.default_permissions(administrator=True)
+    @app_commands.checks.has_permissions(administrator=True)
     async def purgeafter(self, ctx, *, timestamp: str):
         """Deletes all messages after the specified date and time.
 
@@ -59,6 +62,8 @@ class Commands(commands.Cog):
 
     @commands.hybrid_command(hidden=True)
     @commands.has_permissions(administrator=True)
+    @app_commands.default_permissions(administrator=True)
+    @app_commands.checks.has_permissions(administrator=True)
     async def logeverymessage(self, ctx):
         """Logs the entire message history for every channel in the guild."""
         if isinstance(ctx.interaction, discord.Interaction):
@@ -100,6 +105,8 @@ class Commands(commands.Cog):
         
     @commands.hybrid_command(hidden=True)
     @commands.has_permissions(administrator=True)
+    @app_commands.default_permissions(administrator=True)
+    @app_commands.checks.has_permissions(administrator=True)
     async def sync(self, ctx):
         await self.bot.tree.sync()
         if isinstance(ctx.interaction, discord.Interaction):
@@ -107,30 +114,26 @@ class Commands(commands.Cog):
         else:
              await ctx.reply('Command tree synced.')
 
-    @commands.hybrid_command(name="pingme", description="Add or remove the role to get notified of category changes during livestreams.")
-    async def pingme(self, ctx):
-        guild = ctx.guild
+    @app_commands.command(name="pingme", description="Add or remove the role to get notified of category changes during livestreams.")
+    async def pingme(self, interaction: discord.Interaction):
+        if interaction.guild is None:
+            await interaction.response.send_message("**ERROR:** This command can only be used within a server.", ephemeral=True)
+            return
+
+        guild = interaction.guild
+        member: discord.Member = interaction.user
         try:
             role = guild.get_role(int(self.config["GAME_UPDATE_ROLE_ID"]))
-            if role in ctx.author.roles:
-                await ctx.author.remove_roles(role)
-                if isinstance(ctx.interaction, discord.Interaction):
-                    await ctx.reply(f"Removed role `{role.name}`.", ephemeral=True)
-                else:
-                    await ctx.reply(f"Removed role `{role.name}`.")
-                print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] (commands.py) pingme command: '{role.name}' removed from user {ctx.message.author.display_name}")
+            if role in member.roles:
+                await member.remove_roles(role)
+                await interaction.response.send_message(f"Removed role `{role.name}`.", ephemeral=True)
+                print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] (commands.py) pingme command: '{role.name}' removed from user {member.display_name}")
             else:
-                await ctx.author.add_roles(role)
-                if isinstance(ctx.interaction, discord.Interaction):
-                    await ctx.reply(f"Added role `{role.name}`!", ephemeral=True)
-                else:
-                    await ctx.reply(f"Added role `{role.name}`!")
-                print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] (commands.py) pingme command: '{role.name}' added to user {ctx.message.author.display_name}")
+                await member.add_roles(role)
+                await interaction.response.send_message(f"Added role `{role.name}`!", ephemeral=True)
+                print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] (commands.py) pingme command: '{role.name}' added to user {member.display_name}")
         except Exception as e:
-            if isinstance(ctx.interaction, discord.Interaction):
-                await ctx.reply("An error occurred when trying to add your role. Please try again.", ephemeral=True)
-            else:
-                await ctx.reply("An error occurred when trying to add your role. Please try again.")
+            await interaction.response.send_message("An error occurred when trying to add your role. Please try again.", ephemeral=True)
             print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] (commands.py) Error: {e}")
 
 async def setup(bot):
