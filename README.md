@@ -21,6 +21,9 @@ Create a file in the source directory named `secrets.json` with the following:
     "TWITCH_CLIENT_SECRET": "",
     "STREAMER_NAME": "",
     "GOING_LIVE_CHANNEL_ID": "",
+    "GAME_UPDATE_ROLE_ID": "",
+    "NOW_LIVE_COLOR_HEX": "",
+    "NEW_CATEGORY_COLOR_HEX": "",
     "NEW_USER_JOIN_ROLE_ID": "",
     "LOGS_CHANNEL_ID": "",
     "TIMEZONE": "",
@@ -29,8 +32,7 @@ Create a file in the source directory named `secrets.json` with the following:
     "IGNORED_CHANNEL_IDS": [],
     "QUEUE_CHANNEL_ID": "",
     "QUEUE_MASTER_CHANNEL_ID": "",
-    "TWITCH_SUB_ROLE_ID": "",
-    "GAME_UPDATE_ROLE_ID": ""
+    "TWITCH_SUB_ROLE_ID": ""
 }
 ```
 Add the following data in the quotes:
@@ -40,6 +42,9 @@ TWITCH_CLIENT_ID:           Twitch client ID token
 TWITCH_CLIENT_SECRET:       Twitch client secret token
 STREAMER_NAME:              Twitch streamer's name to check for going live
 GOING_LIVE_CHANNEL_ID:      Channel ID to send a message to @everyone when the bot detects the streamer going live.
+GAME_UPDATE_ROLE_ID:        Role ID to have bot mention when stream changes categories.
+NOW_LIVE_COLOR_HEX:         Custom hexadecimal color code to change embed color for "going live" embeds. Keep empty for default (Twitch purple 6441A5)
+NEW_CATEGORY_COLOR_HEX:     Custom hexadecimal color code to change embed color for "new category" embeds. Keep empty for default (Twitch purple 6441A5)
 NEW_USER_JOIN_ROLE_ID:      Role ID to automatically assign to new users
 LOGS_CHANNEL_ID:            Channel ID for the bot to send moderation logs to.
 TIMEZONE:                   Timezone for your bot to refer to
@@ -49,7 +54,6 @@ IGNORED_CHANNEL_ID:         List of channel IDs to ignore logging for.
 QUEUE_CHANNEL_ID:           Channel ID for the queue system.
 QUEUE_MASTER_CHANNEL_ID:    Channel ID for the queue master system.
 TWITCH_SUB_ROLE_ID:         Twitch subscriber role ID for the queue system.
-GAME_UPDATE_ROLE_ID:        Role ID to have bot mention when stream changes categories.
 ```
 
 For a full list of valid timezones, refer to [this list](https://gist.github.com/heyalexej/8bf688fd67d7199be4a1682b3eec7568).

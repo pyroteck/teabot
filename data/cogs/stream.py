@@ -1,24 +1,27 @@
 import aiohttp
+import asyncio
 from datetime import datetime
 import json
 import os
 from discord.ext import commands, tasks
-from discord import Embed, File
+from discord import Colour, Embed, File
 
 class Stream(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.alreadyLive = True # initially set to True so that messasge doesn't get sent on bot startup if already live
+        self.alreadyLive = True
         self.stream_message = None
         self.stream_embed_time = None
         self.thumbnail_path = "twitch_thumbnail.png"
         self.previous_game = None
         self.embed_color = None
+        self.mutex = asyncio.Lock()
         with open('secrets.json') as config_file:
             self.config = json.load(config_file)
 
     @tasks.loop(minutes=3)
     async def check_stream(self):
+        await self.mutex.acquire() # Prevent update_thumbnail from running if it's running concurrently
         try:
             async with aiohttp.ClientSession() as session:
                 # Get access token
@@ -46,7 +49,11 @@ class Stream(commands.Cog):
                                 await self.download_thumbnail(thumbnail_url)
 
                                 stream_info = data['data'][0]
-                                self.embed_color = 0xFAFBDB
+
+                                if self.config["NOW_LIVE_COLOR_HEX"]:
+                                    self.embed_color = Colour.from_str('#' + self.config["NOW_LIVE_COLOR_HEX"].replace("#", ""))
+                                else:
+                                    self.embed_color = Colour.from_str('#6441A5')
 
                                 embed = Embed(
                                     title=stream_info['title'],
@@ -97,7 +104,10 @@ class Stream(commands.Cog):
                                     thumbnail_url = stream_info['thumbnail_url'].replace('{width}x{height}', '1920x1080')
                                     await self.download_thumbnail(thumbnail_url)
 
-                                    self.embed_color = 0x266248
+                                    if self.config["NEW_CATEGORY_COLOR_HEX"]:
+                                        self.embed_color = Colour.from_str('#' + self.config["NEW_CATEGORY_COLOR_HEX"].replace("#", ""))
+                                    else:
+                                        self.embed_color = Colour.from_str('#6441A5')
 
                                     # Create new embed with updated info
                                     embed = Embed(
@@ -122,7 +132,11 @@ class Stream(commands.Cog):
                                         # Send new notification for game change
                                         channel = self.bot.get_channel(int(self.config["GOING_LIVE_CHANNEL_ID"]))
                                         if channel:
-                                            self.stream_message = await channel.send(f'{self.config["STREAMER_NAME"]} has changed categories! Now in: `{stream_info["game_name"]}` <@&{self.config["GAME_UPDATE_ROLE_ID"]}>', embed=embed, file=file)
+                                            self.stream_message = await channel.send(
+                                                f'{self.config["STREAMER_NAME"]} has changed categories! Now in: `{stream_info["game_name"]}` <@&{self.config["GAME_UPDATE_ROLE_ID"]}>\n<https://www.twitch.tv/{stream_info['user_login']}>',
+                                                embed=embed,
+                                                file=file
+                                            )
 
                                         # Update tracking variable
                                         self.previous_game = current_game
@@ -139,10 +153,12 @@ class Stream(commands.Cog):
             print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] (stream.py) Network error in check_stream: {e}")
         except Exception as e:
             print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] (stream.py) Unexpected error in check_stream: {e}")
+        self.mutex.release()
 
     # When stream is live, update thumbnail every 6 minutes since Twitch updates the thumbnail every 5
     @tasks.loop(minutes=6)
     async def update_thumbnail(self):
+        await self.mutex.acquire()
         if self.alreadyLive and self.stream_message:
             try:
                 async with aiohttp.ClientSession() as session:
@@ -203,6 +219,7 @@ class Stream(commands.Cog):
                 print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] (stream.py) Network error in update_thumbnail: {e}")
             except Exception as e:
                 print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] (stream.py) Unexpected error in update_thumbnail: {e}")
+        self.mutex.release()
 
     async def download_thumbnail(self, url):
         """Download thumbnail from URL and save it locally since direct link doesn't always update immediately on Discord"""
