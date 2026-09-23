@@ -20,6 +20,7 @@ class ModerationEvents(commands.Cog):
         self.timezone = pytz.timezone(self.config["TIMEZONE"])
 
         self.ignored_message_ids = set(self.config.get("IGNORED_MESSAGE_IDS", []))
+        self.ignored_channel_ids = set(self.config.get("IGNORED_CHANNEL_IDS", []))
 
         self.alternate_log_channels = {}
         alternate_log_config = self.config.get("ALTERNATE_LOG_CHANNEL", [])
@@ -132,6 +133,9 @@ class ModerationEvents(commands.Cog):
         # Check list in secrets if there's a message ID to ignore
         if str(payload.message_id) in self.ignored_message_ids:
             print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] (moderationevents.py) Message with ID {message_id} was edited but is marked to be ignored.")
+            return
+        elif channel_id in self.ignored_channel_ids:
+            print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] (moderationevents.py) Message with ID {message_id} was edited but the channel {channel_id} is marked to be ignored.")
             return
 
         if message_id not in message_log:
@@ -254,6 +258,14 @@ class ModerationEvents(commands.Cog):
                 print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] (moderationevents.py) Message with ID {message_id} not found in the log for channel {channel_id}, and was not cached.")
             else:
                 print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] (moderationevents.py) Message with ID {message_id} not found in the log for channel {channel_id}.")
+            return
+
+        # Check list in secrets if there's a message ID to ignore
+        if str(payload.message_id) in self.ignored_message_ids:
+            print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] (moderationevents.py) Message with ID {message_id} was deleted but is marked to be ignored.")
+            return
+        elif channel_id in self.ignored_channel_ids:
+            print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] (moderationevents.py) Message with ID {message_id} was deleted but the channel {channel_id} is marked to be ignored.")
             return
 
         message_data = message_log[message_id]
