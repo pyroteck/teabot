@@ -66,7 +66,7 @@ Navigate to root directory of the repository.
 
 Run
 ```
-sudo docker compose up -d
+docker compose up -d
 ```
 to build and run the Docker container.
 
